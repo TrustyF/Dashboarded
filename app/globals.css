@@ -1,0 +1,645 @@
+:root {
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+/* Original base.css set a fixed 15px root font-size, with every component
+   size below authored as an em multiple of it. Expressed here as a clamp
+   anchored to 15px at 800x480 (the target kiosk panel) - using min() of the
+   width- and height-relative values means whichever dimension is tighter
+   drives the scale, which matters for a short, wide panel like this one
+   (a pure vw clamp would overflow vertically). Layout spacing below (gaps,
+   padding) is in em for the same reason - it needs to shrink with the panel,
+   not stay at the original's hardcoded pixel values, which were sized for a
+   much bigger screen. */
+html {
+  font-size: clamp(10px, min(1.875vw, 3.125vh), 17px);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  line-height: 1;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
+    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  background: #0b0d10;
+  color: #f2f2f2;
+}
+
+/* Nav.tsx - floating icon pill, hidden until the bottom strip is tapped */
+.nav_click_area {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 130px;
+  z-index: 10;
+}
+
+.nav_overlay_wrapper {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  margin-bottom: 10px;
+  transform: translate(-50%, 0);
+  z-index: 50;
+
+  opacity: 1;
+  visibility: visible;
+  transition: 150ms;
+}
+
+.nav_overlay_wrapper[data-hidden="true"] {
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -10px);
+}
+
+.nav_wrapper {
+  display: flex;
+  flex-flow: row;
+  gap: 10px;
+  padding: 10px;
+  background-color: #2a3b4d;
+  border-radius: 20px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.25);
+}
+
+.nav_box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6em;
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 14px;
+  background-color: #233140;
+  color: #f2f2f2;
+  text-decoration: none;
+  transition: background-color 0.25s ease-out;
+}
+
+.nav_box.active {
+  background-color: #314459;
+  transition: background-color 0s ease-out;
+}
+
+.home_wrapper {
+  position: relative;
+  display: flex;
+  flex-flow: column;
+  justify-content: space-evenly;
+  gap: 1em;
+  width: 100%;
+  min-height: 100vh;
+  padding: 1em;
+}
+
+#top {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5em;
+}
+
+#footer {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: 1.5em;
+}
+
+/* Clock.tsx */
+.clock_wrapper {
+  display: flex;
+  flex-flow: column;
+  gap: 1em;
+  justify-content: center;
+  color: white;
+}
+
+.time_wrapper {
+  display: flex;
+  flex-flow: row;
+  align-items: flex-end;
+  text-align: right;
+  font-family: monospace;
+}
+
+.time_wrapper .head {
+  font-size: calc(5.5em * var(--size, 1));
+  width: 5ch;
+  line-height: 0.7;
+}
+
+.time_wrapper .decorator {
+  font-size: calc(1.5em * var(--size, 1));
+  margin-left: 4px;
+}
+
+/* TemperatureSingleton.tsx */
+.temp_single_wrapper {
+  position: relative;
+}
+
+.temp_single_wrapper h1 {
+  font-size: calc(5em * var(--size, 1));
+  line-height: 1;
+}
+
+.temp_single_wrapper .decorator {
+  position: absolute;
+  right: calc(-0.6em * max(var(--size, 1), 1));
+  top: 0;
+  font-size: calc(2em * max(var(--size, 1), 0.25));
+}
+
+/* WeatherSummary.tsx */
+.weather_summary_wrapper {
+  color: white;
+  position: relative;
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  gap: 5px;
+  line-height: normal;
+}
+
+.weather_summary_wrapper .header {
+  position: relative;
+  display: flex;
+  flex-flow: row;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+}
+
+.weather_icon {
+  height: calc(5em * var(--size, 1));
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.weather_summary_wrapper .footer {
+  display: flex;
+  flex-flow: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.weather_summary_wrapper .subtitle {
+  font-size: calc(max(1em, 1.5em * var(--size, 1)));
+  text-align: center;
+  max-width: calc(11em * var(--size, 1));
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  margin: 0;
+}
+
+/* SensorTempSummary.tsx */
+.sensor_summary_wrapper {
+  color: white;
+  position: relative;
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  gap: 5px;
+  line-height: normal;
+}
+
+.sensor_summary_wrapper .header {
+  position: relative;
+  display: flex;
+  flex-flow: row;
+  justify-content: center;
+  align-items: center;
+  gap: 0.8em;
+}
+
+.sensor_summary_wrapper .trend {
+  align-self: flex-end;
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.sensor_summary_wrapper .trend-arrow {
+  font-size: 0.7rem;
+}
+
+/* CalendarTimeline.tsx */
+.calendar_timeline_wrapper .event_list {
+  display: flex;
+  flex-flow: column;
+  gap: 0.5em;
+}
+
+.event_wrapper {
+  display: flex;
+  justify-items: flex-start;
+}
+
+.event_wrapper .header {
+  display: grid;
+  grid-template-columns: 4em auto auto;
+  align-items: center;
+  gap: 0.8em;
+  white-space: nowrap;
+}
+
+.event_wrapper .time_remain {
+  text-align: right;
+  font-size: 1em;
+  margin: 0;
+}
+
+.event_wrapper .dot {
+  width: 0.6em;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.event_wrapper h1 {
+  font-size: 1.1em;
+  line-height: normal;
+  text-align: left;
+  width: 12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+}
+
+/* CalendarGrid.tsx */
+.calendar_grid_wrapper {
+  display: flex;
+  flex-flow: column nowrap;
+  gap: 0.4em;
+}
+
+.calendar_grid_wrapper h1 {
+  margin: 0;
+  font-size: 1.1em;
+}
+
+.calendar_grid_wrapper .grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.15em;
+}
+
+.calendar_grid_wrapper .day {
+  padding: 0.35em;
+  font-size: 0.8em;
+  text-align: center;
+  background: #282828;
+  border-radius: 0.4em;
+}
+
+.calendar_grid_wrapper .day.next {
+  background: #1b2026;
+}
+
+.calendar_grid_wrapper .day.today {
+  color: white;
+  outline: 2px solid #2e8ae6;
+  outline-offset: -2px;
+}
+
+.calendar_grid_wrapper .day.past {
+  color: #282828;
+  background: #1f1f1f !important;
+}
+
+/* health/page.tsx */
+#health_wrapper {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  padding: 1.5em;
+}
+
+.health_graph {
+  flex: 1;
+  height: 45vh;
+}
+
+.diff_wrapper {
+  padding: 0.6em;
+  margin-left: 0.6em;
+  display: flex;
+  flex-flow: column;
+  justify-content: space-between;
+  gap: 1em;
+}
+
+/* DiffNumber.tsx */
+.diff_number_wrapper {
+  display: flex;
+  flex-flow: column;
+  gap: 0.2em;
+}
+
+.diff_title {
+  font-size: 1em;
+  text-align: left;
+  margin: 0;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.number_wrapper {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.diff_number_wrapper .number {
+  font-size: 2em;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: left;
+  margin: 0;
+}
+
+.diff_number_wrapper .number::before {
+  font-size: 0.5em;
+  margin-right: 0.4em;
+}
+
+.diff_number_wrapper .decorator {
+  font-size: 1em;
+  margin: 0 0 0 0.3em;
+}
+
+.diff_number_wrapper .number.green::before {
+  color: #09b325;
+}
+
+.diff_number_wrapper .number.red::before {
+  color: #d60b3e;
+}
+
+/* spotify/page.tsx */
+.spotify_view_wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.spotify_idle {
+  opacity: 0.6;
+}
+
+.spotify_background {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.bg_img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(50px);
+  transform: scale(1.2);
+  opacity: 0.5;
+  z-index: 0;
+  animation: fade-in 1s ease-in-out;
+}
+
+.spotify_player_cont {
+  position: relative;
+  display: flex;
+  flex-flow: column;
+  gap: 1.5em;
+  justify-content: center;
+  width: 90%;
+  padding: 1.5em;
+}
+
+.track {
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5em;
+}
+
+.poster {
+  position: relative;
+  width: min(9em, 30vw);
+  aspect-ratio: 1;
+  border-radius: 0.6em;
+  overflow: hidden;
+  box-shadow: 2px 2px 20px rgba(0, 0, 0, 0.4);
+}
+
+.poster img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: fade-in 1s ease-in-out;
+}
+
+.spotify_player_cont .header {
+  display: flex;
+  flex-flow: column;
+  gap: 1.2em;
+  width: min(24em, 50vw);
+  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.6);
+}
+
+.spotify_player_cont .header h1 {
+  font-size: 1.6em;
+  max-width: 100%;
+  line-height: normal;
+  color: white;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spotify_player_cont .header h2 {
+  font-size: 1.1em;
+  margin: 0;
+  font-weight: 400;
+}
+
+.spotify_player_cont .title {
+  position: relative;
+  display: flex;
+  flex-flow: column;
+  gap: 0.4em;
+}
+
+.header_prog {
+  position: relative;
+}
+
+.header_prog .prog_bar {
+  width: 100%;
+  height: 5px;
+  position: relative;
+}
+
+.header_prog .fg_prog {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.25);
+  height: 100%;
+  transition: width 2s ease-in-out;
+  border-radius: 10px;
+}
+
+.header_prog .bg_prog {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(38, 38, 38, 0.25);
+  border-radius: 10px;
+}
+
+.times {
+  position: absolute;
+  bottom: 350%;
+  right: 0;
+}
+
+.times h1 {
+  font-size: 1.2em;
+  color: #cccccc;
+  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.6);
+  margin: 0;
+  font-weight: 400;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.page-wrapper {
+  display: flex;
+  flex-flow: column;
+  gap: 1em;
+  padding: 1.5em;
+  max-width: 50em;
+  margin: 0 auto;
+}
+
+/* weather/page.tsx */
+.weather_page_wrapper {
+  position: relative;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-around;
+  align-items: center;
+  gap: 1.5em;
+  width: 100%;
+  min-height: 100vh;
+  padding: 1em;
+}
+
+.weather_page_wrapper #header {
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5em;
+}
+
+.weather_page_wrapper #footer {
+  display: flex;
+  flex-flow: column nowrap;
+  gap: 1em;
+  justify-content: center;
+  align-items: center;
+}
+
+.weather_chart_card {
+  width: min(30em, 50vw);
+  height: 40vh;
+}
+
+/* ForecastStrip.tsx */
+.forecast_weather {
+  display: flex;
+  flex-flow: column wrap;
+  gap: 0.6em;
+}
+
+.weather_strip {
+  display: flex;
+  flex-flow: row nowrap;
+  gap: 0.8em;
+  align-items: center;
+}
+
+.strip_subtitle {
+  font-size: 1.1em;
+  line-height: 1.2em;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  margin: 0;
+}
+
+.card {
+  background: #16191d;
+  border-radius: 1em;
+  padding: 1em 1.5em;
+  min-width: 14em;
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.card .big {
+  font-size: 2.4rem;
+  font-weight: 600;
+}
+
+.event-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid #23272c;
+  font-size: 0.95rem;
+}
+
+.event-row:last-child {
+  border-bottom: none;
+}

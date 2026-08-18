@@ -1,0 +1,47 @@
+# Deploy step on the Pi, once images are built/pushed:
+#   docker compose pull && docker compose up -d
+#
+# This is the whole point of the Docker migration: replaces whatever manual
+# venv + npm-run + systemd-unit setup exists today with two commands.
+
+services:
+  app:
+    image: ${DASHBOARD_IMAGE:-dashboard-next:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env.local.production
+    volumes:
+      - dashboard-tokens:/data/tokens
+      - dashboard-sensor:/data/sensor:ro
+      # CPU temp / vcgencmd need host access - read-only where possible.
+      - /sys/class/thermal:/sys/class/thermal:ro
+      - /sys/class/backlight:/sys/class/backlight
+      - /opt/vc:/opt/vc:ro
+    devices:
+      - /dev/vchiq
+    depends_on:
+      - sensor-poller
+
+  sensor-poller:
+    image: ${SENSOR_POLLER_IMAGE:-dashboard-sensor-poller:latest}
+    build:
+      context: ./sensor_poller
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    privileged: true # simplest path to GPIO access; narrow to specific
+    # /dev/gpiomem + /dev/mem device mounts once you've confirmed it works,
+    # if you'd rather not run a container privileged long-term.
+    environment:
+      SENSOR_DATA_PATH: /data/sensor/latest.json
+      SENSOR_POLL_INTERVAL: "10"
+    volumes:
+      - dashboard-sensor:/data/sensor
+
+volumes:
+  dashboard-tokens:
+  dashboard-sensor:
