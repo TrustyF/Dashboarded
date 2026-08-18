@@ -1,3 +1,5 @@
+import styles from "./TemperatureSingleton.module.sass";
+
 // Port of temperature_singleton.vue.
 
 export default function TemperatureSingleton({
@@ -8,9 +10,9 @@ export default function TemperatureSingleton({
   size?: number;
 }) {
   return (
-    <div className="temp_single_wrapper" style={{ "--size": size } as React.CSSProperties}>
+    <div className={styles.wrapper} style={{ "--size": size } as React.CSSProperties}>
       <h1>{temperature}</h1>
-      <h1 className="decorator">°</h1>
+      <h1 className={styles.decorator}>°</h1>
     </div>
   );
 }

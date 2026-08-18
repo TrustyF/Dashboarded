@@ -1,0 +1,50 @@
+.clickArea
+  position: fixed
+  left: 0
+  bottom: 0
+  width: 100vw
+  height: 130px
+  z-index: 10
+
+.overlayWrapper
+  position: fixed
+  left: 50%
+  bottom: 0
+  margin-bottom: 10px
+  transform: translate(-50%, 0)
+  z-index: 50
+
+  opacity: 1
+  visibility: visible
+  transition: 150ms
+
+  &[data-hidden="true"]
+    opacity: 0
+    visibility: hidden
+    transform: translate(-50%, -10px)
+
+.wrapper
+  display: flex
+  flex-flow: row
+  gap: 10px
+  padding: 10px
+  background-color: #2a3b4d
+  border-radius: 20px
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.25)
+
+.box
+  display: flex
+  align-items: center
+  justify-content: center
+  font-size: 1.6em
+  width: 1.9em
+  height: 1.9em
+  border-radius: 14px
+  background-color: #233140
+  color: #f2f2f2
+  text-decoration: none
+  transition: background-color 0.25s ease-out
+
+  &.active
+    background-color: #314459
+    transition: background-color 0s ease-out

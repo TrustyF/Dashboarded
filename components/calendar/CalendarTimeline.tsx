@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import styles from "./CalendarTimeline.module.sass";
 
 // Port of CalendarTimeline.vue + CalendarTimeBlock.vue (merged into one file
 // since the sub-component had no independent reuse elsewhere).
@@ -70,11 +71,14 @@ function EventRow({ event }: { event: CalendarEvent }) {
   }, [event.date]);
 
   return (
-    <div className="event_wrapper">
-      <div className="header" style={{ color: relevanceOpacity(days) }}>
-        <h2 className="time_remain">{text}</h2>
-        <div className="dot" style={{ backgroundColor: EVENT_COLORS[String(event.colorId)] ?? EVENT_COLORS.null }} />
-        <h1>{event.name}</h1>
+    <div className={styles.eventWrapper}>
+      <div className={styles.header} style={{ color: relevanceOpacity(days) }}>
+        <h2 className={styles.timeRemain}>{text}</h2>
+        <div
+          className={styles.dot}
+          style={{ backgroundColor: EVENT_COLORS[String(event.colorId)] ?? EVENT_COLORS.null }}
+        />
+        <h1 className={styles.name}>{event.name}</h1>
       </div>
     </div>
   );
@@ -82,12 +86,10 @@ function EventRow({ event }: { event: CalendarEvent }) {
 
 export default function CalendarTimeline({ events }: { events: CalendarEvent[] }) {
   return (
-    <div className="calendar_timeline_wrapper">
-      <div className="event_list">
-        {events.slice(0, 5).map((event) => (
-          <EventRow event={event} key={event.id} />
-        ))}
-      </div>
+    <div className={styles.eventList}>
+      {events.slice(0, 5).map((event) => (
+        <EventRow event={event} key={event.id} />
+      ))}
     </div>
   );
 }

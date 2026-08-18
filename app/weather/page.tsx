@@ -6,6 +6,7 @@ import ForecastStrip from "@/components/weather/ForecastStrip";
 // TODO: swap for a ported DayTempGraph (day-range chart) once the chart
 // components move to ECharts - see components/weather/graphs/DayTempGraph.vue.
 import HourlyTempChart from "@/components/charts/HourlyTempChart";
+import styles from "./page.module.sass";
 
 // Visual port of WeatherView.vue.
 
@@ -14,7 +15,7 @@ export default function WeatherPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="weather_page_wrapper">
+      <div className={styles.wrapper}>
         <p>Loading weather…</p>
       </div>
     );
@@ -23,8 +24,8 @@ export default function WeatherPage() {
   const { current, hourly, daily } = data;
 
   return (
-    <div className="weather_page_wrapper">
-      <div id="header">
+    <div className={styles.wrapper}>
+      <div className={styles.header}>
         <WeatherSummary
           size={1}
           temperature={Math.round(current.temperature_2m)}
@@ -33,8 +34,8 @@ export default function WeatherPage() {
         <ForecastStrip maxTemps={daily.temperature_2m_max} weatherCodes={daily.weather_code} />
       </div>
 
-      <div id="footer">
-        <div className="weather_chart_card">
+      <div className={styles.footer}>
+        <div className={styles.chartCard}>
           <HourlyTempChart
             times={hourly.time}
             temps={hourly.temperature_2m}

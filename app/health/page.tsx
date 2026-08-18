@@ -3,6 +3,7 @@
 import { useFitbit } from "@/lib/hooks";
 import WeightChart from "@/components/charts/WeightChart";
 import DiffNumber from "@/components/fitbit/DiffNumber";
+import styles from "./page.module.sass";
 
 // Visual port of HealthView.vue.
 
@@ -35,12 +36,12 @@ export default function HealthPage() {
   const { data, isLoading } = useFitbit();
 
   return (
-    <div id="health_wrapper">
-      <div className="health_graph">
+    <div className={styles.wrapper}>
+      <div className={styles.graph}>
         {isLoading || !data?.weight?.length ? <p>Loading…</p> : <WeightChart weight={data.weight} />}
       </div>
 
-      <div className="diff_wrapper">
+      <div className={styles.diffWrapper}>
         <DiffNumber number={lastDiff(data?.weight)} title="Weight diff" />
         <DiffNumber number={avgDiff(data?.weight)} title="Avg weight diff" />
         <DiffNumber number={lastDiff(data?.fat)} title="Fat diff" />

@@ -1,0 +1,36 @@
+.wrapper
+  color: white
+  position: relative
+  display: flex
+  flex-flow: column
+  align-items: center
+  gap: 5px
+  line-height: normal
+
+  .header
+    position: relative
+    display: flex
+    flex-flow: row
+    justify-content: center
+    align-items: center
+    gap: 5px
+
+  .footer
+    display: flex
+    flex-flow: column
+    gap: 3px
+    align-items: center
+
+  .subtitle
+    font-size: calc(max(1em, 1.5em * var(--size, 1)))
+    text-align: center
+    max-width: calc(11em * var(--size, 1))
+    white-space: nowrap
+    text-overflow: ellipsis
+    overflow: hidden
+    margin: 0
+
+.icon
+  height: calc(5em * var(--size, 1))
+  aspect-ratio: 1
+  object-fit: cover

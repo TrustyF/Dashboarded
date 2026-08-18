@@ -1,0 +1,16 @@
+// .decorator is nested here (rather than a sibling top-level rule) so its
+// selector specificity (two classes) beats the bare `h1` rule above it (one
+// class + one tag) - same ordering the original relied on via a shared
+// `.temp_single_wrapper` prefix on both rules.
+.wrapper
+  position: relative
+
+  h1
+    font-size: calc(5em * var(--size, 1))
+    line-height: 1
+
+  .decorator
+    position: absolute
+    right: calc(-0.6em * max(var(--size, 1), 1))
+    top: 0
+    font-size: calc(2em * max(var(--size, 1), 0.25))

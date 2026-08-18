@@ -1,0 +1,32 @@
+.wrapper
+  display: flex
+  flex-flow: column nowrap
+  gap: 0.4em
+
+  h1
+    margin: 0
+    font-size: 1.1em
+
+.grid
+  display: grid
+  grid-template-columns: repeat(7, 1fr)
+  gap: 0.15em
+
+.day
+  padding: 0.35em
+  font-size: 0.8em
+  text-align: center
+  background: #282828
+  border-radius: 0.4em
+
+  &.next
+    background: #1b2026
+
+  &.today
+    color: white
+    outline: 2px solid #2e8ae6
+    outline-offset: -2px
+
+  &.past
+    color: #282828
+    background: #1f1f1f !important

@@ -6,6 +6,7 @@ import WeatherSummary from "@/components/weather/WeatherSummary";
 import SensorTempSummary from "@/components/sensors/SensorTempSummary";
 import CalendarTimeline from "@/components/calendar/CalendarTimeline";
 import CalendarGrid from "@/components/calendar/CalendarGrid";
+import styles from "./page.module.sass";
 
 // Visual port of HomeView.vue, wired to the real API routes.
 
@@ -16,8 +17,8 @@ export default function HomePage() {
   const currentTemp = weather?.current?.temperature_2m;
 
   return (
-    <div className="home_wrapper">
-      <div id="top">
+    <div className={styles.wrapper}>
+      <div className={styles.top}>
         <WeatherSummary
           size={0.8}
           temperature={currentTemp != null ? Math.round(currentTemp) : 0}
@@ -27,7 +28,7 @@ export default function HomePage() {
         <SensorTempSummary size={0.8} />
       </div>
 
-      <div id="footer">
+      <div className={styles.footer}>
         <CalendarTimeline events={events ?? []} />
         <CalendarGrid events={events ?? []} />
       </div>

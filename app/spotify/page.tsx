@@ -1,6 +1,7 @@
 "use client";
 
 import { useSpotifyNowPlaying } from "@/lib/useSpotifyNowPlaying";
+import styles from "./page.module.sass";
 
 // Visual port of SpotifyView.vue. The original used the Spotify Web Playback
 // SDK's *name* but not its actual playback features - it only ever polled
@@ -21,38 +22,38 @@ export default function SpotifyPage() {
   const progress = track ? Math.round((progressMs / track.duration_ms) * 100) : 0;
 
   return (
-    <div className="spotify_view_wrapper">
-      <div className="spotify_background">
-        {artUrl && <div className="bg_img" key={`${track!.id}+bg`} style={{ backgroundImage: `url(${artUrl})` }} />}
+    <div className={styles.wrapper}>
+      <div className={styles.background}>
+        {artUrl && (
+          <div className={styles.bgImg} key={`${track!.id}+bg`} style={{ backgroundImage: `url(${artUrl})` }} />
+        )}
       </div>
 
-      <div className="spotify_player_cont">
+      <div className={styles.playerCont}>
         {track ? (
-          <div className="track">
-            <div className="poster">
-              {artUrl && <img key={`${track.id}+poster`} src={artUrl} alt="" />}
-            </div>
+          <div className={styles.track}>
+            <div className={styles.poster}>{artUrl && <img key={`${track.id}+poster`} src={artUrl} alt="" />}</div>
 
-            <div className="header">
-              <div className="title">
+            <div className={styles.header}>
+              <div className={styles.title}>
                 <h1>{track.name}</h1>
                 <h2>{track.artists[0]?.name}</h2>
               </div>
 
-              <div className="header_prog">
-                <div className="times">
+              <div className={styles.headerProg}>
+                <div className={styles.times}>
                   <h1>{formatDuration(track.duration_ms)}</h1>
                 </div>
 
-                <div className="prog_bar">
-                  <div className="bg_prog" />
-                  <div className="fg_prog" style={{ width: `${progress}%` }} />
+                <div className={styles.progBar}>
+                  <div className={styles.bgProg} />
+                  <div className={styles.fgProg} style={{ width: `${progress}%` }} />
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          <p className="spotify_idle">Nothing playing</p>
+          <p className={styles.idle}>Nothing playing</p>
         )}
       </div>
     </div>

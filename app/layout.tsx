@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Nav from "@/components/Nav";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import "./globals.css";
+import "./globals.sass";
 
 // Self-hosted by Next (no runtime request to Google) - matches base.css's
 // original font-family, which put Inter first ahead of the system stack.

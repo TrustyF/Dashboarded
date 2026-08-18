@@ -1,0 +1,29 @@
+// True global rules only - everything else lives in colocated *.module.sass
+// files next to the component/page that uses it.
+
+:root
+  color-scheme: dark
+
+*,
+*::before,
+*::after
+  box-sizing: border-box
+  margin: 0
+  font-weight: normal
+
+// Original base.css set a fixed 15px root font-size, with every component
+// size authored as an em multiple of it. Expressed here as a clamp anchored
+// to 15px at 800x480 (the target kiosk panel) - using min() of the width-
+// and height-relative values means whichever dimension is tighter drives the
+// scale, which matters for a short, wide panel like this one (a pure vw
+// clamp would overflow vertically).
+html
+  font-size: clamp(10px, min(1.875vw, 3.125vh), 17px)
+
+body
+  margin: 0
+  min-height: 100vh
+  line-height: 1
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif
+  background: #0b0d10
+  color: #f2f2f2

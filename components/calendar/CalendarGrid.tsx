@@ -1,4 +1,5 @@
 import type { CalendarEvent } from "./CalendarTimeline";
+import styles from "./CalendarGrid.module.sass";
 
 // Port of CalendarGrid.vue - shows the current month, colors days that have
 // an event, and outlines today.
@@ -70,17 +71,17 @@ export default function CalendarGrid({ events }: { events: CalendarEvent[] }) {
   }
 
   return (
-    <div className="calendar_grid_wrapper">
+    <div className={styles.wrapper}>
       <h1>{today.toLocaleString("en-GB", { year: "numeric", month: "long", day: "2-digit" })}</h1>
-      <div className="grid">
+      <div className={styles.grid}>
         {daysGrid.map(({ date, isNextMonth }) => (
           <div
             key={date.toISOString()}
             className={[
-              "day",
-              isNextMonth && "next",
-              sameDay(date, today) && "today",
-              isPast(date, today) && "past",
+              styles.day,
+              isNextMonth && styles.next,
+              sameDay(date, today) && styles.today,
+              isPast(date, today) && styles.past,
             ]
               .filter(Boolean)
               .join(" ")}

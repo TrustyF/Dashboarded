@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import styles from "./Clock.module.sass";
 
 // Port of Clock.vue. The original also had a commented-out sunrise/sunset
 // progress bar (dead code in the source) - not carried over.
@@ -21,10 +22,10 @@ export default function Clock({ size = 1 }: { size?: number }) {
   }, []);
 
   return (
-    <div className="clock_wrapper">
-      <div className="time_wrapper" style={{ "--size": size } as React.CSSProperties}>
-        <h1 className="head">{parts?.time ?? "--:--"}</h1>
-        {parts?.decorator && <h1 className="decorator">{parts.decorator}</h1>}
+    <div className={styles.wrapper}>
+      <div className={styles.timeWrapper} style={{ "--size": size } as React.CSSProperties}>
+        <h1 className={styles.head}>{parts?.time ?? "--:--"}</h1>
+        {parts?.decorator && <h1 className={styles.decorator}>{parts.decorator}</h1>}
       </div>
     </div>
   );

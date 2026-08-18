@@ -2,6 +2,7 @@
 
 import { useSensorHistory } from "@/lib/hooks";
 import TemperatureSingleton from "@/components/weather/TemperatureSingleton";
+import styles from "./SensorTempSummary.module.sass";
 
 // Port of SensorTempSummary.vue. The original indexed temps[0] as "the latest
 // reading" and averaged from the tail of the array - that assumed the backend
@@ -17,7 +18,7 @@ export default function SensorTempSummary({ size = 1 }: { size?: number }) {
   const readings = temps.filter((t): t is number => t != null);
 
   if (readings.length === 0) {
-    return <div className="sensor_summary_wrapper" />;
+    return <div className={styles.wrapper} />;
   }
 
   const latest = readings[readings.length - 1];
@@ -28,12 +29,12 @@ export default function SensorTempSummary({ size = 1 }: { size?: number }) {
   const trend = Math.abs(diff) > TREND_MARGIN ? (diff > 0 ? "up" : "down") : null;
 
   return (
-    <div className="sensor_summary_wrapper" style={{ "--size": size } as React.CSSProperties}>
-      <div className="header">
+    <div className={styles.wrapper} style={{ "--size": size } as React.CSSProperties}>
+      <div className={styles.header}>
         <TemperatureSingleton temperature={Math.round(avg * 10) / 10} size={size} />
-        <div className="trend">
-          {trend === "up" && <div className="trend-arrow">▲</div>}
-          {trend === "down" && <div className="trend-arrow">▼</div>}
+        <div className={styles.trend}>
+          {trend === "up" && <div className={styles.trendArrow}>▲</div>}
+          {trend === "down" && <div className={styles.trendArrow}>▼</div>}
           <div>{latest}</div>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import styles from "./Nav.module.sass";
 
 // Port of NavOverlay.vue: a floating icon pill, hidden by default (kiosk-style,
 // stays out of the way on a wall display) that appears when you tap/click the
@@ -48,16 +49,16 @@ export default function Nav() {
   }, []);
 
   return (
-    <div className="nav_click_area" onClick={show} ref={clickAreaRef}>
-      <div className="nav_overlay_wrapper" data-hidden={hidden}>
-        <nav className="nav_wrapper">
+    <div className={styles.clickArea} onClick={show} ref={clickAreaRef}>
+      <div className={styles.overlayWrapper} data-hidden={hidden}>
+        <nav className={styles.wrapper}>
           {LINKS.map((link) => {
             const active = pathname === link.href;
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={active ? "nav_box active" : "nav_box"}
+                className={active ? `${styles.box} ${styles.active}` : styles.box}
                 aria-label={link.label}
               >
                 <i className={active ? `bi ${link.icon}` : `bi ${link.iconInactive}`} />

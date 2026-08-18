@@ -1,4 +1,5 @@
 import TemperatureSingleton from "./TemperatureSingleton";
+import styles from "./WeatherSummary.module.sass";
 
 // Port of weather_summary.vue. Icon set carried over from the original
 // dashboard_client/public/assets/weather/icons/v1.
@@ -47,17 +48,17 @@ export default function WeatherSummary({
   const [title, icon] = CODE_MAP[weatherCode] ?? CODE_MAP[999];
 
   return (
-    <div className="weather_summary_wrapper" style={{ "--size": size } as React.CSSProperties}>
-      <div className="header">
+    <div className={styles.wrapper} style={{ "--size": size } as React.CSSProperties}>
+      <div className={styles.header}>
         {icon !== "undefined" && (
-          <img className="weather_icon" src={`/assets/weather/icons/v1/${icon}.png`} alt={title} />
+          <img className={styles.icon} src={`/assets/weather/icons/v1/${icon}.png`} alt={title} />
         )}
         <TemperatureSingleton temperature={temperature} size={size} />
       </div>
 
       {subtitle && (
-        <div className="footer">
-          <h2 className="subtitle">{title}</h2>
+        <div className={styles.footer}>
+          <h2 className={styles.subtitle}>{title}</h2>
         </div>
       )}
     </div>
