@@ -11,14 +11,14 @@
   margin: 0
   font-weight: normal
 
-// Original base.css set a fixed 15px root font-size, with every component
-// size authored as an em multiple of it. Expressed here as a clamp anchored
-// to 15px at 800x480 (the target kiosk panel) - using min() of the width-
-// and height-relative values means whichever dimension is tighter drives the
-// scale, which matters for a short, wide panel like this one (a pure vw
-// clamp would overflow vertically).
+// Target hardware is the DSI panel (Raspberry Pi Touch Display 2, native
+// 720x1280 portrait) rotated 90deg to an effective 1280x720 landscape -
+// confirmed via `wlr-randr` against the real device (2026-08-19), not the
+// 800x480 originally assumed. Anchored to 20px at exactly 1280x720; min() of
+// the width- and height-relative values means whichever dimension is
+// tighter drives the scale on other aspect ratios (dev browser testing etc).
 html
-  font-size: clamp(10px, min(1.875vw, 3.125vh), 17px)
+  font-size: clamp(12px, min(1.5625vw, 2.7778vh), 24px)
 
 body
   margin: 0

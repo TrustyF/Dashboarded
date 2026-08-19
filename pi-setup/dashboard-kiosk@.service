@@ -18,6 +18,12 @@ StandardInput=tty
 StandardOutput=journal
 StandardError=journal
 
+# Target hardware: DSI-1 (Raspberry Pi Touch Display 2, native 720x1280
+# portrait) - confirmed via `wlr-randr` against the real device. Socket name
+# (wayland-0) also confirmed live rather than assumed.
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=WAYLAND_DISPLAY=wayland-0
+
 ExecStartPre=/usr/local/bin/wait-for-dashboard.sh
 ExecStart=/usr/bin/cage -- /usr/bin/chromium \
   --kiosk \
@@ -27,8 +33,14 @@ ExecStart=/usr/bin/cage -- /usr/bin/chromium \
   --disable-translate \
   --check-for-update-interval=31536000 \
   --ozone-platform=wayland \
-  --window-size=800,480 \
+  --window-size=1280,720 \
   http://localhost:3000
+# Rotates the compositor's output (not the console/kernel level - a
+# /boot/firmware/cmdline.txt `video=...,rotate=` attempt was a dead end,
+# since that only affects the text console, not Wayland). --transform 90
+# confirmed live against the real device (2026-08-19) to give the intended
+# 90deg counter-clockwise rotation.
+ExecStartPost=/bin/sh -c 'for i in $(seq 1 20); do wlr-randr --output DSI-1 --transform 90 && break; sleep 0.5; done'
 
 Restart=always
 RestartSec=3

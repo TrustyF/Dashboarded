@@ -14,7 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Installing cage + chromium..."
 apt-get update
-apt-get install -y --no-install-recommends cage chromium curl
+apt-get install -y --no-install-recommends cage chromium curl wlr-randr
 
 echo "Installing wait-for-dashboard.sh..."
 install -m 755 "$SCRIPT_DIR/wait-for-dashboard.sh" /usr/local/bin/wait-for-dashboard.sh
