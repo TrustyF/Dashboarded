@@ -13,6 +13,14 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    # Docker mounts /sys read-only inside non-privileged containers regardless
+    # of the /sys/class/backlight volume mount below (confirmed on-device:
+    # brightnessctl failed with EROFS even with correct file ownership/group
+    # permissions) - there's no narrower fix short of cap_add: SYS_ADMIN plus
+    # apparmor:unconfined plus an entrypoint that manually remounts the path
+    # rw, which grants a similarly broad capability anyway. Matches the
+    # sensor-poller precedent below.
+    privileged: true
     ports:
       - "3000:3000"
     env_file:
@@ -23,11 +31,12 @@ services:
       # CPU temp needs host access - read-only.
       - /sys/class/thermal:/sys/class/thermal:ro
       # Read-write for /api/settings/toggle-brightness (brightnessctl). Write
-      # access relies on the backlight sysfs path being group-owned "video" on
-      # the host with GID 44 (Debian's default, and Raspberry Pi OS's too) -
-      # the Dockerfile adds the nextjs user to that same GID. If brightness
-      # writes still fail with EACCES, check `stat -c '%G %g' /sys/class/backlight/*/brightness`
-      # on the Pi and adjust the Dockerfile's video group if the GID differs.
+      # access also relies on the backlight sysfs path being group-owned
+      # "video" on the host with GID 44 (Debian's default, and Raspberry Pi
+      # OS's too) - the Dockerfile adds the non-root nextjs user to that same
+      # GID, since `privileged: true` alone doesn't grant a non-root process
+      # DAC-override; it only lifts Docker's own read-only/seccomp/AppArmor
+      # restrictions on the mount.
       - /sys/class/backlight:/sys/class/backlight
     # /dev/vchiq (needed for vcgencmd's voltage reading) doesn't exist on
     # every Pi/OS combo - notably missing on Bookworm and on Pi 5, which uses
@@ -56,6 +65,11 @@ services:
     environment:
       SENSOR_DATA_PATH: /data/sensor/latest.json
       SENSOR_POLL_INTERVAL: "10"
+      # Calibration offsets against a ground-truth reference device - set to
+      # (ground truth - raw reading), e.g. if the DHT22 reads 2.0 high, set
+      # SENSOR_TEMP_OFFSET to "-2". Leave at 0 if uncalibrated.
+      SENSOR_TEMP_OFFSET: "-4.2"
+      SENSOR_HUMIDITY_OFFSET: "6"
     volumes:
       - dashboard-sensor:/data/sensor
 

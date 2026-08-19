@@ -27,6 +27,11 @@ logger = logging.getLogger("sensor_poller")
 DATA_PATH = Path(os.environ.get("SENSOR_DATA_PATH", "/data/sensor/latest.json"))
 POLL_INTERVAL_SECONDS = float(os.environ.get("SENSOR_POLL_INTERVAL", "10"))
 HISTORY_LENGTH = int(os.environ.get("SENSOR_HISTORY_LENGTH", "100"))
+# Constant correction applied to every raw reading - set to (ground truth -
+# raw reading) from a reference device at a known point in time to calibrate
+# out this DHT22's own sensor bias.
+TEMP_OFFSET = float(os.environ.get("SENSOR_TEMP_OFFSET", "0"))
+HUMIDITY_OFFSET = float(os.environ.get("SENSOR_HUMIDITY_OFFSET", "0"))
 MAX_RETRY = 5
 
 dht_device = None
@@ -51,8 +56,8 @@ def read_sensor():
 
     for attempt in range(MAX_RETRY):
         try:
-            temperature_c = round(dht_device.temperature, 1)
-            humidity = round(dht_device.humidity, 1)
+            temperature_c = round(dht_device.temperature + TEMP_OFFSET, 1)
+            humidity = round(dht_device.humidity + HUMIDITY_OFFSET, 1)
             return temperature_c, humidity
         except RuntimeError as error:
             # DHT22s are noisy; this happens often under normal operation.
