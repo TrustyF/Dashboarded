@@ -6,7 +6,10 @@
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+# Docker's normal layer cache already skips this whole stage when the lock
+# file hasn't changed; this cache mount just speeds up the case where it has
+# (npm doesn't have to re-download packages it's already fetched before).
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 FROM node:22-bookworm-slim AS builder
 WORKDIR /app

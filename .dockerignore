@@ -1,5 +1,18 @@
 node_modules
 .next
 .env.local
+.env.local.production
 npm-debug.log*
 .git
+
+# Not needed to build/run the `app` image - keeps the build context small
+# and (more importantly) stops unrelated changes to these from invalidating
+# the `COPY . .` layer and forcing a full rebuild.
+data
+scripts
+pi-setup
+sensor_poller
+.github
+README.md
+MIGRATION_PLAN.md
+STATUS.md
