@@ -35,8 +35,15 @@ type StepsRollupPoint = {
 };
 
 async function getAccessToken(): Promise<string> {
-  const raw = await readFile(TOKEN_PATH, "utf-8");
-  const { refresh_token } = JSON.parse(raw);
+  let refresh_token: string;
+  try {
+    const raw = await readFile(TOKEN_PATH, "utf-8");
+    ({ refresh_token } = JSON.parse(raw));
+  } catch {
+    // Missing/unparseable token file - same "needs re-bootstrapping" bucket
+    // as a rejected refresh token, not a transient rate-limit.
+    throw new Error("invalid-credentials");
+  }
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -49,7 +56,7 @@ async function getAccessToken(): Promise<string> {
     }),
   });
 
-  if (!res.ok) throw new Error("token-refresh-failed");
+  if (!res.ok) throw new Error("invalid-credentials");
   const json = await res.json();
   return json.access_token;
 }
@@ -155,9 +162,14 @@ export async function GET(req: NextRequest) {
       queryMeasurement("body-fat", accessToken, cutoff),
       querySteps(accessToken),
     ]);
-  } catch {
-    // Surface rate-limiting/auth failure distinctly so the UI can show "try
-    // again later" instead of an indistinguishable-from-loading empty chart.
+  } catch (err) {
+    // Surface rate-limiting vs. invalid/expired credentials distinctly - both
+    // used to collapse into "rate-limited", which made a bad client
+    // id/secret or a revoked refresh token look identical to "try again
+    // later" and impossible to diagnose from the UI alone.
+    if (err instanceof Error && err.message === "invalid-credentials") {
+      return NextResponse.json({ error: "invalid-credentials" }, { status: 401 });
+    }
     return NextResponse.json({ error: "rate-limited" }, { status: 429 });
   }
 

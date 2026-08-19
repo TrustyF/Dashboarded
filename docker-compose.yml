@@ -1,8 +1,10 @@
-# Deploy step on the Pi, once images are built/pushed:
-#   docker compose pull && docker compose up -d
+# Images are built on the dev machine (cross-compiled for linux/arm64 - the Pi
+# is too weak to build on-device) and shipped here via scp + docker load, not a
+# registry pull. Run from the repo root on your dev machine:
+#   .\scripts\deploy-to-pi.ps1
 #
 # This is the whole point of the Docker migration: replaces whatever manual
-# venv + npm-run + systemd-unit setup exists today with two commands.
+# venv + npm-run + systemd-unit setup exists today with one script.
 
 services:
   app:

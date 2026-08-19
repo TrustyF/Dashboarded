@@ -1,9 +1,15 @@
-# Multi-stage build targeting linux/arm64 (Pi 4/5). Build with:
-#   docker buildx build --platform linux/arm64 -t dashboard-next:latest .
-# from your dev machine, then push/pull to the Pi - don't run `next build`
-# on-device unless you don't mind the RAM/CPU spike during the build step.
+# Multi-stage build targeting linux/arm64 (Pi 4/5). Don't run `next build`
+# on-device - build from your dev machine and ship it over instead, via:
+#   .\scripts\deploy-to-pi.ps1
+#
+# The deps/builder stages run under --platform=$BUILDPLATFORM (the build
+# machine's own arch, e.g. amd64) rather than the target arm64 - there are no
+# native/arch-specific deps in package.json, so npm ci and next build produce
+# the same architecture-independent JS output either way, and running them
+# natively skips QEMU emulation entirely (much faster than emulated arm64).
+# Only the final runner stage's base image needs to actually be arm64.
 
-FROM node:22-bookworm-slim AS deps
+FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
 # Docker's normal layer cache already skips this whole stage when the lock
@@ -11,7 +17,7 @@ COPY package.json package-lock.json* ./
 # (npm doesn't have to re-download packages it's already fetched before).
 RUN --mount=type=cache,target=/root/.npm npm ci
 
-FROM node:22-bookworm-slim AS builder
+FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

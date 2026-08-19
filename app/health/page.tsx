@@ -30,6 +30,8 @@ export default function HealthPage() {
 
       {isLoading ? (
         <p>Loading…</p>
+      ) : data?.error === "invalid-credentials" ? (
+        <p>Google Health credentials are invalid or expired - re-run the token bootstrap.</p>
       ) : data?.error ? (
         <p>Google Health is rate-limiting requests right now - try again in a bit.</p>
       ) : !data?.weight?.length ? (

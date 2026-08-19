@@ -28,12 +28,25 @@ original Flask code did when `adafruit_dht` failed to import.
 
 ## Building for the Pi
 
+The Pi is too weak to build the images on-device (`next build` and compiling
+`RPi.GPIO`'s C extension are both slow/heavy there). Instead, build on your dev
+machine (cross-compiled for `linux/arm64` via `docker buildx`) and ship the
+images straight to the Pi over `scp` + `docker load` - no registry needed:
+
 ```sh
-docker buildx build --platform linux/arm64 -t dashboard-next:latest .
-docker buildx build --platform linux/arm64 -t dashboard-sensor-poller:latest ./sensor_poller
-# push both to a registry the Pi can pull from, then on the Pi:
-docker compose pull && docker compose up -d
+.\scripts\deploy-to-pi.ps1
 ```
+
+Use `-SkipApp` or `-SkipSensorPoller` to rebuild/redeploy just one image. Pass
+`-PiHost`/`-PiPath` if your Pi's hostname or the compose project's directory on
+it differ from the defaults (`arthur@dashboard`, `~/Dashboarded`). Requires
+`ssh`/`scp` access to the Pi and Docker Desktop's buildx (already set up if
+`docker buildx version` works).
+
+The app's `npm ci`/`next build` stages run natively (not emulated) since the
+project has no arch-specific deps - only the final runtime image is actually
+arm64, so cross-building shouldn't feel much slower than a normal build. If it
+still does, bump Docker Desktop's CPU/RAM allocation under Settings → Resources.
 
 ## Kiosk display (showing it on the Pi's own screen)
 
