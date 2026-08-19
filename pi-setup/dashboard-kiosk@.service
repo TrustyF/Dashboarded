@@ -21,8 +21,17 @@ StandardError=journal
 # Target hardware: DSI-1 (Raspberry Pi Touch Display 2, native 720x1280
 # portrait) - confirmed via `wlr-randr` against the real device. Socket name
 # (wayland-0) also confirmed live rather than assumed.
+#
+# WAYLAND_DISPLAY is deliberately NOT set here at the unit level - cage's
+# own backend autodetection treats a pre-set WAYLAND_DISPLAY as "there's
+# already a parent Wayland compositor, connect to it as a nested client"
+# instead of using the DRM backend to talk to the GPU directly, which is
+# what a kiosk actually needs. Learned this the hard way: setting it here
+# made cage fail with "Unable to create the wlroots backend" - stayed
+# "active (running)" per systemd, but never touched the actual display.
+# It's only passed inline to the wlr-randr command below instead, once
+# cage's own socket already exists.
 Environment=XDG_RUNTIME_DIR=/run/user/%U
-Environment=WAYLAND_DISPLAY=wayland-0
 
 ExecStartPre=/usr/local/bin/wait-for-dashboard.sh
 ExecStart=/usr/bin/cage -- /usr/bin/chromium \
@@ -40,7 +49,7 @@ ExecStart=/usr/bin/cage -- /usr/bin/chromium \
 # since that only affects the text console, not Wayland). --transform 90
 # confirmed live against the real device (2026-08-19) to give the intended
 # 90deg counter-clockwise rotation.
-ExecStartPost=/bin/sh -c 'for i in $(seq 1 20); do wlr-randr --output DSI-1 --transform 90 && break; sleep 0.5; done'
+ExecStartPost=/bin/sh -c 'for i in $(seq 1 20); do WAYLAND_DISPLAY=wayland-0 wlr-randr --output DSI-1 --transform 90 && break; sleep 0.5; done'
 
 Restart=always
 RestartSec=3
