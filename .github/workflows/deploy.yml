@@ -12,10 +12,19 @@ name: Deploy to Pi
 on:
   push:
     branches: [main]
+    # Changes here alone don't need a rebuild - README/setup docs and Pi
+    # OS-level kiosk config aren't part of the Docker image.
+    paths-ignore:
+      - "README.md"
+      - "MIGRATION_PLAN.md"
+      - "pi-setup/**"
 
 jobs:
   deploy:
     runs-on: self-hosted
+    # Manual escape hatch for anything paths-ignore doesn't catch: include
+    # "[skip deploy]" anywhere in the commit message.
+    if: ${{ !contains(github.event.head_commit.message, '[skip deploy]') }}
     steps:
       - uses: actions/checkout@v4
 
