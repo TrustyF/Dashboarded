@@ -12,7 +12,12 @@ FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+# Persists Next.js's own incremental build cache across image builds (BuildKit
+# cache mounts survive even when earlier layers invalidate, unlike normal
+# Docker layer caching) - meaningfully cuts rebuild time on repeat deploys
+# where most of the app hasn't changed. Needs BuildKit, which is the default
+# builder on Docker 23+ (no extra config needed).
+RUN --mount=type=cache,target=/app/.next/cache npm run build
 
 # Runtime image only needs the pruned "standalone" server output, not the
 # full node_modules tree or source - keeps the deployed image small.
