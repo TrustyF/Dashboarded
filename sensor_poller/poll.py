@@ -36,9 +36,13 @@ try:
 
     dht_device = adafruit_dht.DHT22(board.D4, use_pulseio=False)
     logger.info("adafruit_dht loaded, reading from GPIO4")
-except Exception:
-    logger.warning("adafruit_dht not available - falling back to simulated readings "
-                    "(expected when running off-Pi, e.g. in dev)")
+except Exception as e:
+    # Logging the actual exception (not just a generic message) matters here -
+    # "not available" could mean board.py failed to detect the Pi model, a
+    # missing native dependency, no GPIO device access in the container, or
+    # genuinely no sensor wired up. Those need different fixes.
+    logger.warning("adafruit_dht not available (%s: %s) - falling back to simulated readings",
+                    type(e).__name__, e)
 
 
 def read_sensor():

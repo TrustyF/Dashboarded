@@ -18,12 +18,21 @@ services:
     volumes:
       - dashboard-tokens:/data/tokens
       - dashboard-sensor:/data/sensor:ro
-      # CPU temp / vcgencmd need host access - read-only where possible.
+      # CPU temp needs host access - read-only.
       - /sys/class/thermal:/sys/class/thermal:ro
       - /sys/class/backlight:/sys/class/backlight
-      - /opt/vc:/opt/vc:ro
-    devices:
-      - /dev/vchiq
+    # /dev/vchiq (needed for vcgencmd's voltage reading) doesn't exist on
+    # every Pi/OS combo - notably missing on Bookworm and on Pi 5, which uses
+    # a different chip (RP1) than the legacy VideoCore mailbox interface this
+    # belongs to. Not worth requiring: /api/vitals already handles vcgencmd
+    # failing gracefully (falls back to 0), so this was speculative from the
+    # initial migration and never actually needed. If your Pi does have
+    # /dev/vchiq (check with `ls /dev/vchiq` on the host) and you want the
+    # voltage reading, add back:
+    #   devices:
+    #     - /dev/vchiq
+    #   volumes:
+    #     - /opt/vc:/opt/vc:ro
     depends_on:
       - sensor-poller
 

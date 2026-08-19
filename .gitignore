@@ -5,7 +5,7 @@ next-env.d.ts
 .env
 .env.local
 .env.*.local
-.env.production
+.env.local.production
 tsconfig.tsbuildinfo
 
 # Python (sensor_poller)
@@ -25,3 +25,4 @@ dashboard_next_migration.zip
 # Local dev token/data files (see .env.local's *_TOKEN_PATH, SENSOR_DATA_PATH)
 data/
 /STATUS.md
+/.env.local.production
