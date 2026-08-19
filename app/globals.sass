@@ -21,15 +21,14 @@
   // being blocked.
   touch-action: none
 
-// Kiosk display has no mouse - Wayland's cursor is client-controlled, so
-// this tells Chromium to tell the compositor to hide it entirely, rather
-// than needing any compositor-level cursor theme hackery. Scoped to
-// [data-kiosk], which layout.tsx only sets in production, so the cursor
-// stays visible during local dev.
-[data-kiosk] *,
-[data-kiosk] *::before,
-[data-kiosk] *::after
-  cursor: none
+// TEMP: cursor-hiding disabled while debugging pi-setup/rc.xml's touch
+// calibration matrix - need to actually see the (real or touch-emulated)
+// pointer on screen to tell where taps are landing vs where they should.
+// Re-enable once the matrix is confirmed correct:
+// [data-kiosk] *,
+// [data-kiosk] *::before,
+// [data-kiosk] *::after
+//   cursor: none
 
 // Target hardware is the DSI panel (Raspberry Pi Touch Display 2, native
 // 720x1280 portrait) rotated 90deg to an effective 1280x720 landscape -

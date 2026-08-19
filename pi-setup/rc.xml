@@ -10,13 +10,15 @@
        still "work" since they only read relative motion between two touch
        points, not absolute position.
 
-       This matrix should counter-rotate touch input to match the 90deg CCW
-       display transform - NOT verified against the physical hardware.
-       If taps still land offset/mirrored after this, the rotation is
-       probably the wrong direction: try "0 -1 1 1 0 0" (90deg CW) instead. -->
+       First attempt used "0 1 0 -1 0 1" (90deg CCW, matching the display
+       transform directly) - still wrong, so trying the other direction:
+       "0 -1 1 1 0 0" (90deg CW) instead. If this is also wrong, the two
+       most likely remaining candidates are 180deg ("-1 0 1 0 -1 1") or no
+       rotation at all ("1 0 0 0 1 0", i.e. the touch digitizer may already
+       self-report rotated coordinates and doesn't need this at all). -->
   <libinput>
     <device category="touch">
-      <calibrationMatrix>0 1 0 -1 0 1</calibrationMatrix>
+      <calibrationMatrix>0 -1 1 1 0 0</calibrationMatrix>
     </device>
   </libinput>
 
