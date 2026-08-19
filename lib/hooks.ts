@@ -31,3 +31,7 @@ export function useFitbit(timeDelta = 300) {
 export function useVitals() {
   return useSWR("/api/vitals", fetcher, { refreshInterval: 10_000 });
 }
+
+export function useBrightness() {
+  return useSWR("/api/settings/toggle-brightness?toggle=state", fetcher);
+}

@@ -82,7 +82,8 @@ journalctl -b | grep -iE 'labwc|chromium'
 3. Run the one-time OAuth bootstrap on a machine with a browser (your laptop, not the
    Pi - refresh tokens aren't tied to the machine that requested them):
    ```sh
-   npm run bootstrap-tokens -- google    # opens a browser, writes google_refresh_token.json
+   npm run bootstrap-tokens -- google         # opens a browser, writes google_refresh_token.json
+   npm run bootstrap-tokens -- google-health  # opens a browser, writes google_health_token.json
    npm run bootstrap-tokens -- fitbit    # opens a browser, prompts you to paste a code
    npm run bootstrap-tokens -- spotify   # opens a browser, writes .spotify_cache
    # or: npm run bootstrap-tokens -- all

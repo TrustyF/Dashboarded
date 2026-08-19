@@ -22,6 +22,12 @@ services:
       - dashboard-sensor:/data/sensor:ro
       # CPU temp needs host access - read-only.
       - /sys/class/thermal:/sys/class/thermal:ro
+      # Read-write for /api/settings/toggle-brightness (brightnessctl). Write
+      # access relies on the backlight sysfs path being group-owned "video" on
+      # the host with GID 44 (Debian's default, and Raspberry Pi OS's too) -
+      # the Dockerfile adds the nextjs user to that same GID. If brightness
+      # writes still fail with EACCES, check `stat -c '%G %g' /sys/class/backlight/*/brightness`
+      # on the Pi and adjust the Dockerfile's video group if the GID differs.
       - /sys/class/backlight:/sys/class/backlight
     # /dev/vchiq (needed for vcgencmd's voltage reading) doesn't exist on
     # every Pi/OS combo - notably missing on Bookworm and on Pi 5, which uses

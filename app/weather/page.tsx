@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useWeather } from "@/lib/hooks";
+import { useSensorHistory, useWeather } from "@/lib/hooks";
 import { netChange } from "@/lib/weather-metrics";
 import { CODE_MAP } from "@/components/weather/WeatherSummary";
 import ForecastStrip from "@/components/weather/ForecastStrip";
@@ -11,12 +11,13 @@ import styles from "./page.module.sass";
 // ECharts is a ~650KB chunk - deferring it keeps the shell interactive (and
 // the weather fetch that clears the "Loading…" state running) instead of
 // blocking hydration behind that download+parse.
-const HourlyTempChart = dynamic(() => import("@/components/charts/HourlyTempChart"), { ssr: false });
+const DailyTempChart = dynamic(() => import("@/components/charts/DailyTempChart"), { ssr: false });
 
 // Same Google Fit/Health Connect style overview as app/health/page.tsx:
 // quick-glance stat tiles up top, the detailed trend chart underneath.
 export default function WeatherPage() {
   const { data, isLoading } = useWeather();
+  const { data: sensor } = useSensorHistory();
 
   if (isLoading || !data) {
     return (
@@ -38,7 +39,7 @@ export default function WeatherPage() {
 
   // Skip the precipitation line entirely when nothing meaningful is forecast -
   // a flat line hugging 0 (or lost in float noise) is just visual clutter.
-  const hasPrecipitation = hourly.precipitation.some((v: number | null) => v != null && v > 0.1);
+  const hasPrecipitation = daily.precipitation_sum?.some((v: number | null) => v != null && v > 0.1);
 
   return (
     <div className={styles.wrapper}>
@@ -54,6 +55,7 @@ export default function WeatherPage() {
           goodDirection="neutral"
           icon={conditionIconSrc}
           iconAlt={conditionTitle}
+          iconLabel={conditionTitle}
         />
         <StatCard
           label="Feels like"
@@ -73,16 +75,25 @@ export default function WeatherPage() {
           sparkline={nextTwoHours(hourly.precipitation)}
           goodDirection="neutral"
         />
+        <StatCard
+          label="Indoor"
+          value={sensor?.temp?.at(-1) ?? null}
+          unit="°"
+          diff={netChange(sensor?.temp)}
+          color="#c38869"
+          sparkline={sensor?.temp ?? []}
+          goodDirection="neutral"
+        />
       </div>
 
       <div className={styles.trendCard}>
-        <div className={styles.trendHeader}>Hourly forecast</div>
+        <div className={styles.trendHeader}>Daily forecast</div>
         <div className={styles.trendChart}>
-          <HourlyTempChart
-            times={hourly.time}
-            temps={hourly.temperature_2m}
-            apparentTemps={hourly.apparent_temperature}
-            precipitation={hasPrecipitation ? hourly.precipitation : undefined}
+          <DailyTempChart
+            times={daily.time}
+            highs={daily.temperature_2m_max}
+            lows={daily.temperature_2m_min}
+            precipitation={hasPrecipitation ? daily.precipitation_sum : undefined}
           />
         </div>
       </div>

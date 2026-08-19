@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useSensorCurrent, useSensorHistory } from "@/lib/hooks";
 import styles from "./page.module.sass";
 
-// See app/weather/page.tsx's HourlyTempChart import for why this is deferred.
+// See app/weather/page.tsx's DailyTempChart import for why this is deferred.
 const SensorHistoryChart = dynamic(() => import("@/components/charts/SensorHistoryChart"), { ssr: false });
 
 export default function SensorsPage() {

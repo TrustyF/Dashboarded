@@ -8,7 +8,9 @@ import { readFile } from "node:fs/promises";
 // every caller; only the upstream provider changed.
 //
 // Token bootstrap: `node scripts/bootstrap-tokens.mjs google-health` (reuses
-// GOOGLE_CLIENT_ID/SECRET - see that script's bootstrapGoogleHealth).
+// GOOGLE_CLIENT_ID/SECRET, but needs its own refresh token - the Health API
+// rejects tokens that also carry other product scopes like Calendar's, so
+// this can't share app/api/calendar's GOOGLE_TOKEN_PATH file).
 
 const TOKEN_PATH = process.env.GOOGLE_HEALTH_TOKEN_PATH ?? "/data/tokens/google_health_token.json";
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
@@ -69,6 +71,7 @@ async function queryDataPoints<T>(dataType: string, accessToken: string, pageSiz
   });
 
   if (!res.ok) {
+    console.error(`[fitbit] ${dataType} dataPoints failed: ${res.status} ${await res.text()}`);
     if (res.status === 429) throw new Error("rate-limited");
     return [];
   }
@@ -136,6 +139,7 @@ async function querySteps(accessToken: string): Promise<Array<{ dateTime: string
   });
 
   if (!res.ok) {
+    console.error(`[fitbit] steps dailyRollUp failed: ${res.status} ${await res.text()}`);
     if (res.status === 429) throw new Error("rate-limited");
     return [];
   }
@@ -169,6 +173,9 @@ export async function GET(req: NextRequest) {
     // later" and impossible to diagnose from the UI alone.
     if (err instanceof Error && err.message === "invalid-credentials") {
       return NextResponse.json({ error: "invalid-credentials" }, { status: 401 });
+    }
+    if (!(err instanceof Error && err.message === "rate-limited")) {
+      console.error("[fitbit] unexpected error, reporting as rate-limited:", err);
     }
     return NextResponse.json({ error: "rate-limited" }, { status: 429 });
   }

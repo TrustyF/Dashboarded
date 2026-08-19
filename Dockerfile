@@ -34,7 +34,16 @@ FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN groupadd --system nextjs && useradd --system --gid nextjs nextjs
+# brightnessctl backs /api/settings/toggle-brightness - writes through the
+# /sys/class/backlight mount from docker-compose.yml. On Debian that path is
+# typically group-owned "video", so nextjs joins that group (rather than
+# running the whole container as root) to get write access to it.
+RUN apt-get update && apt-get install -y --no-install-recommends brightnessctl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --system nextjs && useradd --system --gid nextjs nextjs \
+    && (getent group video || groupadd --system video) \
+    && usermod -aG video nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./

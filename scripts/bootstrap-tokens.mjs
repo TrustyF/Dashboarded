@@ -131,10 +131,13 @@ async function bootstrapGoogle() {
 }
 
 async function bootstrapGoogleHealth() {
-  // Reuses the same Cloud project/OAuth client as bootstrapGoogle() (Calendar) -
-  // scopes are requested per auth call, not baked into the client, so the one
-  // client_id/secret works as long as the Google Health API is enabled and
-  // these two scopes are added to that project's OAuth consent screen.
+  // Reuses the same Cloud project/OAuth client as bootstrapGoogle() (Calendar),
+  // but needs its own separate refresh token: the Google Health API rejects
+  // access tokens that also carry other product scopes (confirmed via direct
+  // curl - 403 PERMISSION_DENIED/DISALLOWED_OAUTH_SCOPES, disallowed_scopes:
+  // "cl_readonly" when Calendar's scope was included in the same token). So
+  // this can't share GOOGLE_TOKEN_PATH with Calendar despite sharing the
+  // client id/secret.
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const tokenPath = process.env.GOOGLE_HEALTH_TOKEN_PATH ?? "./data/tokens/google_health_token.json";

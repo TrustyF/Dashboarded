@@ -10,11 +10,13 @@ const LON = process.env.WEATHER_LON ?? "-123.1193";
 const REVALIDATE_SECONDS = 10 * 60; // 10 mins
 
 type DailyBlock = {
+  time: string[];
   temperature_2m_min: number[];
   temperature_2m_max: number[];
   temperature_2m?: number[];
   temperature_day_range?: number[];
   temperature_day_range_times?: string[];
+  precipitation_sum?: number[];
   [key: string]: unknown;
 };
 

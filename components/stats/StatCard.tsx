@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import DiffPill from "@/components/stats/DiffPill";
+import StatCardShell from "@/components/stats/StatCardShell";
 import styles from "./StatCard.module.sass";
 
 // See app/health/page.tsx's WeightChart import for why this is deferred.
@@ -23,6 +24,7 @@ type Props = {
   goodDirection?: "down" | "up" | "neutral";
   icon?: string;
   iconAlt?: string;
+  iconLabel?: string;
   // Swaps out the line sparkline for something else (e.g. StepRings) - the
   // sparkline props above are still required so callers without a custom
   // visual don't need a separate prop shape.
@@ -30,7 +32,10 @@ type Props = {
 };
 
 // Google Fit/Health Connect style tile: label, headline number, a diff pill,
-// and a small trend visual - one glance covers "what" and "which way".
+// and a small trend visual - one glance covers "what" and "which way". This
+// is a StatCardShell preset for that specific shape; tiles that don't fit
+// "number + diff + trend" should compose StatCardShell directly instead of
+// growing this prop list.
 export default function StatCard({
   label,
   value,
@@ -44,20 +49,17 @@ export default function StatCard({
   goodDirection,
   icon,
   iconAlt,
+  iconLabel,
   visual,
 }: Props) {
   return (
-    <div className={styles.card}>
-      <div className={styles.topRow}>
-        <div className={styles.label}>{label}</div>
-        {icon && <img className={styles.icon} src={icon} alt={iconAlt ?? ""} />}
-      </div>
+    <StatCardShell label={label} icon={icon} iconAlt={iconAlt} iconLabel={iconLabel}>
       <div className={styles.value}>
         {value != null ? value : "—"}
         <span className={styles.unit}>{unit}</span>
       </div>
       <DiffPill value={diff} unit={diffUnit ?? unit} goodDirection={goodDirection} />
       {visual ?? <Sparkline data={sparkline} color={color} min={sparklineMin} max={sparklineMax} />}
-    </div>
+    </StatCardShell>
   );
 }

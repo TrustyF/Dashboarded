@@ -13,16 +13,25 @@ let index = 1; // starts at brightness_array[1] === 30 in the original... actual
 let currentBrightness = 100;
 
 async function setBrightness(pct: number) {
-  currentBrightness = pct;
   await execFileAsync("brightnessctl", ["set", `${pct}%`]);
+  currentBrightness = pct;
 }
 
 export async function GET(req: NextRequest) {
   const action = req.nextUrl.searchParams.get("toggle");
 
   if (action === "toggle") {
-    index = (index + 1) % BRIGHTNESS_STEPS.length;
-    await setBrightness(BRIGHTNESS_STEPS[index]);
+    const nextIndex = (index + 1) % BRIGHTNESS_STEPS.length;
+    try {
+      // brightnessctl isn't available off-Pi in dev, and may fail on-Pi if
+      // the container can't write /sys/class/backlight - fail gracefully
+      // (leave currentBrightness/index unchanged) rather than 500ing, same
+      // as /api/vitals does for its own Pi-only reads.
+      await setBrightness(BRIGHTNESS_STEPS[nextIndex]);
+      index = nextIndex;
+    } catch (err) {
+      return NextResponse.json({ error: "brightnessctl unavailable", detail: String(err) }, { status: 503 });
+    }
     return NextResponse.json("ok");
   }
 

@@ -5,30 +5,30 @@ import { echarts, THEME_NAME } from "@/lib/echarts-setup";
 
 type Props = {
   times: string[];
-  temps: number[];
-  apparentTemps?: number[];
+  highs: number[];
+  lows?: number[];
   precipitation?: number[];
 };
 
-// Open-Meteo's hourly.time is ISO "YYYY-MM-DDTHH:MM" - the chart only spans a
-// few hours, so the date part is redundant clutter on the tick labels.
-function timeOnly(isoString: string): string {
-  const match = /T(\d{2}:\d{2})/.exec(isoString);
-  return match ? match[1] : isoString;
+// Open-Meteo's daily.time is a plain "YYYY-MM-DD" - show the weekday instead
+// of the full date, which is redundant clutter on a 7-day-wide axis.
+function weekday(isoDate: string): string {
+  const date = new Date(`${isoDate}T00:00`);
+  return Number.isNaN(date.getTime()) ? isoDate : date.toLocaleDateString(undefined, { weekday: "short" });
 }
 
-// Replaces components/weather/graphs/DayTempGraph.vue / ForecastGraph.vue with
-// a single reusable chart driven by plain arrays instead of Vue-specific props.
-export default function HourlyTempChart({ times, temps, apparentTemps, precipitation }: Props) {
+// Daily counterpart to the old HourlyTempChart - same reusable chart shape,
+// driven by per-day high/low/precipitation arrays instead of hourly ones.
+export default function DailyTempChart({ times, highs, lows, precipitation }: Props) {
   // Right margin has to fit each line's endLabel text (near the last data
   // point) and the precipitation axis's own tick labels, which sit further out.
-  const gridRight = 60 + (apparentTemps ? 30 : 0) + (precipitation ? 70 : 0);
+  const gridRight = 60 + (lows ? 30 : 0) + (precipitation ? 70 : 0);
 
   const series: Record<string, unknown>[] = [
     {
-      name: "Temperature",
+      name: "High",
       type: "line",
-      data: temps,
+      data: highs,
       showSymbol: false,
       smooth: 0.35,
       areaStyle: { opacity: 0.15 },
@@ -37,11 +37,11 @@ export default function HourlyTempChart({ times, temps, apparentTemps, precipita
     },
   ];
 
-  if (apparentTemps) {
+  if (lows) {
     series.push({
-      name: "Feels like",
+      name: "Low",
       type: "line",
-      data: apparentTemps,
+      data: lows,
       showSymbol: false,
       smooth: 0.35,
       color: "#9aa0a6",
@@ -70,14 +70,14 @@ export default function HourlyTempChart({ times, temps, apparentTemps, precipita
       option={{
         tooltip: { trigger: "axis" },
         grid: { left: 50, right: gridRight, top: 16, bottom: 30 },
-        xAxis: { type: "category", boundaryGap: false, data: times, axisLabel: { formatter: timeOnly } },
+        xAxis: { type: "category", boundaryGap: false, data: times, axisLabel: { formatter: weekday } },
         yAxis: [
           { type: "value", scale: true, axisLabel: { formatter: "{value}°" } },
           {
             type: "value",
             show: Boolean(precipitation),
             splitLine: { show: false },
-            axisLabel: { show:false, formatter: "{value}mm" },
+            axisLabel: { show: false, formatter: "{value}mm" },
           },
         ],
         series,
