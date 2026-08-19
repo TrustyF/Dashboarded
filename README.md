@@ -38,18 +38,26 @@ docker compose pull && docker compose up -d
 ## Kiosk display (showing it on the Pi's own screen)
 
 `pi-setup/` sets up a fullscreen kiosk pointed at `http://localhost:3000` using
-`cage` (a minimal Wayland compositor whose only job is running one app
-fullscreen - no desktop, no panel, no screensaver to fight) + Chromium,
-wired through systemd so it survives reboots and restarts itself if it
-crashes. Run once on the Pi:
+`labwc` (Raspberry Pi's own Wayland compositor - properly patched for their
+GPU driver stack, which matters: `cage` was tried first and hit an
+unresolved EGL/wlroots incompatibility on real hardware) + Chromium, launched
+via console autologin rather than a systemd service. Run once on the Pi:
 
 ```sh
 cd pi-setup
-sudo ./install.sh          # installs cage+chromium, enables the systemd service
+sudo ./install.sh          # installs labwc+chromium, sets up autologin+autostart
 sudo reboot
 ```
 
-Logs: `journalctl -u dashboard-kiosk@<your-username>.service -f`
+Rotation for the target panel (DSI, native portrait, rotated 90deg CCW to an
+effective 1280x720 landscape) is baked into `pi-setup/labwc-autostart` via
+`wlr-randr` - if your hardware differs, that's the file to change.
+
+Since labwc/Chromium run as a login shell rather than a systemd service,
+there's no `journalctl -u ...` to tail - check the actual screen, or:
+```sh
+journalctl -b | grep -iE 'labwc|chromium'
+```
 
 ## Before going further
 

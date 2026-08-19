@@ -1,0 +1,29 @@
+#!/bin/sh
+# Installed as ~/.config/labwc/autostart - labwc runs this on startup. Runs
+# as a real child of labwc, so it inherits WAYLAND_DISPLAY/XDG_RUNTIME_DIR
+# correctly without needing to guess/hardcode them (unlike the systemd
+# service approach this replaced, which fought cage's own backend
+# autodetection and never got cage rendering at all - see project history).
+
+# Rotate the DSI panel 90deg CCW (Wayland's own transform convention).
+# Retries briefly since the output may not be registered the instant labwc
+# starts.
+for i in $(seq 1 20); do
+  wlr-randr --output DSI-1 --transform 90 && break
+  sleep 0.5
+done
+
+# Wait for the app container to actually be serving before Chromium tries
+# to load it - Chromium doesn't retry a failed page load on its own.
+/usr/local/bin/wait-for-dashboard.sh
+
+chromium \
+  --kiosk \
+  --noerrdialogs \
+  --disable-infobars \
+  --disable-session-crashed-bubble \
+  --disable-translate \
+  --check-for-update-interval=31536000 \
+  --ozone-platform=wayland \
+  --window-size=1280,720 \
+  http://localhost:3000 &
