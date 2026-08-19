@@ -35,6 +35,22 @@ docker buildx build --platform linux/arm64 -t dashboard-sensor-poller:latest ./s
 docker compose pull && docker compose up -d
 ```
 
+## Kiosk display (showing it on the Pi's own screen)
+
+`pi-setup/` sets up a fullscreen kiosk pointed at `http://localhost:3000` using
+`cage` (a minimal Wayland compositor whose only job is running one app
+fullscreen - no desktop, no panel, no screensaver to fight) + Chromium,
+wired through systemd so it survives reboots and restarts itself if it
+crashes. Run once on the Pi:
+
+```sh
+cd pi-setup
+sudo ./install.sh          # installs cage+chromium, enables the systemd service
+sudo reboot
+```
+
+Logs: `journalctl -u dashboard-kiosk@<your-username>.service -f`
+
 ## Before going further
 
 1. Move the hardcoded Google OAuth client_id/secret out of `calendar_bp.py` (see
