@@ -14,7 +14,7 @@
        held up - now trying 180deg instead of the original 90deg CW attempt. -->
   <libinput>
     <device category="touch">
-      <calibrationMatrix>-1 0 1 0 -1 1</calibrationMatrix>
+      <calibrationMatrix>0 1 0 -1 0 1</calibrationMatrix>
     </device>
   </libinput>
 
