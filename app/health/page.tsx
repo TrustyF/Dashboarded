@@ -3,8 +3,9 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useFitbit } from "@/lib/hooks";
-import { avgDiff, lastValue } from "@/lib/fitbit-metrics";
+import { avgDiff, goalProgressPercent, lastValue } from "@/lib/fitbit-metrics";
 import StatCard from "@/components/stats/StatCard";
+import StepRings, { STEPS_GOAL } from "@/components/stats/StepRings";
 import RangeSelector from "@/components/health/RangeSelector";
 import styles from "./page.module.sass";
 
@@ -30,7 +31,7 @@ export default function HealthPage() {
       {isLoading ? (
         <p>Loading…</p>
       ) : data?.error ? (
-        <p>Fitbit is rate-limiting requests right now - try again in a bit.</p>
+        <p>Google Health is rate-limiting requests right now - try again in a bit.</p>
       ) : !data?.weight?.length ? (
         <p>No weight data for this range.</p>
       ) : (
@@ -53,21 +54,15 @@ export default function HealthPage() {
               sparkline={data.fat.map((p: { value: number | null }) => p.value)}
             />
             <StatCard
-              label="BMI"
-              value={lastValue(data.bmi)}
-              unit=""
-              diff={avgDiff(data.bmi)}
-              color="#5b9bd5"
-              sparkline={data.bmi.map((p: { value: number | null }) => p.value)}
-            />
-            <StatCard
               label="Steps (5d)"
-              value={lastValue(data.steps)}
-              unit=""
+              value={goalProgressPercent(data.steps, STEPS_GOAL)}
+              unit="%"
               diff={avgDiff(data.steps)}
+              diffUnit=""
               color="#f2cc8f"
               sparkline={data.steps.map((p: { value: number | null }) => p.value)}
               goodDirection="up"
+              visual={<StepRings days={data.steps} color="#f2cc8f" />}
             />
           </div>
 

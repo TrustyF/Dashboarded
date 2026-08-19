@@ -10,6 +10,16 @@
   box-sizing: border-box
   margin: 0
   font-weight: normal
+  // layout.tsx's viewport maximumScale/userScalable meta tags are the
+  // "standard" way on paper, but Chromium 88+ ignores them for accessibility
+  // reasons - pinch-zoom still works despite them. touch-action is the
+  // mechanism browsers actually still enforce. Also matters beyond just
+  // zoom: once the page *is* pinch-zoomed, position:fixed elements (like
+  // Nav's bottom reveal strip) stay pinned to the layout viewport, which can
+  // drift out of reach of the visual viewport after a zoom+pan - so touch
+  // stopped reaching the nav strip as a side effect of zoom not actually
+  // being blocked.
+  touch-action: none
 
 // Kiosk display has no mouse - Wayland's cursor is client-controlled, so
 // this tells Chromium to tell the compositor to hide it entirely, rather

@@ -14,9 +14,11 @@ export const metadata: Metadata = {
 };
 
 // Disables pinch-to-zoom on the touchscreen - Chromium's --disable-pinch
-// launch flag was deprecated years ago and no longer works, but this
-// standard viewport control still does. Fixed dashboard on a wall-mounted
-// panel has no legitimate use for user zoom, unlike a normal web page.
+// launch flag was deprecated years ago and no longer works. This viewport
+// control used to be the standard fix too, but Chromium 88+ ignores
+// maximumScale/userScalable for accessibility reasons, so pinch still works
+// despite this. The actual enforcement is globals.sass's `touch-action: none`
+// - this is kept as a harmless fallback for browsers that do still honor it.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,

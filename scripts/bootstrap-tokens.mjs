@@ -10,6 +10,7 @@
  *
  * Usage:
  *   node scripts/bootstrap-tokens.mjs google
+ *   node scripts/bootstrap-tokens.mjs google-health
  *   node scripts/bootstrap-tokens.mjs fitbit
  *   node scripts/bootstrap-tokens.mjs spotify
  *   node scripts/bootstrap-tokens.mjs all
@@ -129,6 +130,61 @@ async function bootstrapGoogle() {
   await writeJson(tokenPath, { refresh_token: json.refresh_token });
 }
 
+async function bootstrapGoogleHealth() {
+  // Reuses the same Cloud project/OAuth client as bootstrapGoogle() (Calendar) -
+  // scopes are requested per auth call, not baked into the client, so the one
+  // client_id/secret works as long as the Google Health API is enabled and
+  // these two scopes are added to that project's OAuth consent screen.
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const tokenPath = process.env.GOOGLE_HEALTH_TOKEN_PATH ?? "./data/tokens/google_health_token.json";
+  if (!clientId || !clientSecret) throw new Error("GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET missing from .env");
+
+  const server = createServer();
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = server.address().port;
+  server.close();
+
+  const redirectUri = `http://localhost:${port}/callback`;
+  const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  authUrl.search = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: [
+      "https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly",
+      "https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly",
+    ].join(" "),
+    access_type: "offline",
+    prompt: "consent",
+  }).toString();
+
+  const callbackPromise = waitForCallback(port, "/callback");
+  openBrowser(authUrl.toString());
+  const code = await callbackPromise;
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code",
+    }),
+  });
+  const json = await res.json();
+  if (!json.refresh_token) {
+    throw new Error(
+      `No refresh_token in response (${JSON.stringify(json)}). If you've authorized this app before, ` +
+        "revoke access at https://myaccount.google.com/permissions and re-run."
+    );
+  }
+
+  await writeJson(tokenPath, { refresh_token: json.refresh_token });
+}
+
 async function bootstrapFitbit() {
   const clientId = process.env.FITBIT_CLIENT_ID;
   const clientSecret = process.env.FITBIT_CLIENT_SECRET;
@@ -218,7 +274,12 @@ async function bootstrapSpotify() {
   });
 }
 
-const SERVICES = { google: bootstrapGoogle, fitbit: bootstrapFitbit, spotify: bootstrapSpotify };
+const SERVICES = {
+  google: bootstrapGoogle,
+  "google-health": bootstrapGoogleHealth,
+  fitbit: bootstrapFitbit,
+  spotify: bootstrapSpotify,
+};
 
 async function main() {
   const target = process.argv[2];

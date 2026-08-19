@@ -28,3 +28,13 @@ export function avgDiff(points: Point[] | undefined): number | null {
   const avg = window.reduce((sum, p) => sum + (p.value ?? 0), 0) / window.length;
   return Math.round((current - avg) * 10) / 10;
 }
+
+// e.g. steps over the last 5 days against a daily goal - total actual over
+// total possible (goalPerDay * number of days), not an average of daily %s,
+// so a big day can offset a lighter one instead of every day being weighted
+// equally regardless of how far it missed the goal.
+export function goalProgressPercent(points: Point[] | undefined, goalPerDay: number): number | null {
+  if (!points || points.length === 0) return null;
+  const total = points.reduce((sum, p) => sum + (p.value ?? 0), 0);
+  return Math.round((total / (goalPerDay * points.length)) * 100);
+}

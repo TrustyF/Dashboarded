@@ -12,6 +12,10 @@ type Props = {
   value: number | null;
   unit: string;
   diff: number | null;
+  // Diff pill's unit, when it isn't measured in the same unit as the
+  // headline value (e.g. headline is "% of goal" but diff is a raw count).
+  // Defaults to `unit`.
+  diffUnit?: string;
   color: string;
   sparkline: (number | null)[];
   sparklineMin?: number;
@@ -19,15 +23,20 @@ type Props = {
   goodDirection?: "down" | "up" | "neutral";
   icon?: string;
   iconAlt?: string;
+  // Swaps out the line sparkline for something else (e.g. StepRings) - the
+  // sparkline props above are still required so callers without a custom
+  // visual don't need a separate prop shape.
+  visual?: React.ReactNode;
 };
 
 // Google Fit/Health Connect style tile: label, headline number, a diff pill,
-// and a small trend sparkline - one glance covers "what" and "which way".
+// and a small trend visual - one glance covers "what" and "which way".
 export default function StatCard({
   label,
   value,
   unit,
   diff,
+  diffUnit,
   color,
   sparkline,
   sparklineMin,
@@ -35,6 +44,7 @@ export default function StatCard({
   goodDirection,
   icon,
   iconAlt,
+  visual,
 }: Props) {
   return (
     <div className={styles.card}>
@@ -46,8 +56,8 @@ export default function StatCard({
         {value != null ? value : "—"}
         <span className={styles.unit}>{unit}</span>
       </div>
-      <DiffPill value={diff} unit={unit} goodDirection={goodDirection} />
-      <Sparkline data={sparkline} color={color} min={sparklineMin} max={sparklineMax} />
+      <DiffPill value={diff} unit={diffUnit ?? unit} goodDirection={goodDirection} />
+      {visual ?? <Sparkline data={sparkline} color={color} min={sparklineMin} max={sparklineMax} />}
     </div>
   );
 }
