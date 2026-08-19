@@ -3,7 +3,7 @@ FROM python:3.12-slim-bookworm
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libgpiod2 \
+    && apt-get install -y --no-install-recommends libgpiod2 gcc python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
