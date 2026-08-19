@@ -3,7 +3,7 @@
 
   <libinput>
     <device category="touch">
-      <calibrationMatrix>0 1 0 -1 0 1</calibrationMatrix>
+      <calibrationMatrix>0 -1 1 1 0 0</calibrationMatrix>
     </device>
   </libinput>
 
