@@ -10,6 +10,10 @@
   box-sizing: border-box
   margin: 0
   font-weight: normal
+  // Kiosk display has no mouse - Wayland's cursor is client-controlled, so
+  // this tells Chromium to tell the compositor to hide it entirely, rather
+  // than needing any compositor-level cursor theme hackery.
+  cursor: none
 
 // Target hardware is the DSI panel (Raspberry Pi Touch Display 2, native
 // 720x1280 portrait) rotated 90deg to an effective 1280x720 landscape -
