@@ -34,4 +34,8 @@ Restart=always
 RestartSec=3
 
 [Install]
-WantedBy=graphical.target
+# Raspberry Pi OS Lite boots to multi-user.target by default, not
+# graphical.target (that's only reached on a Desktop image with a display
+# manager) - cage doesn't need a display manager, it talks to DRM/KMS
+# directly, so multi-user.target is the right thing to hook into here.
+WantedBy=multi-user.target
