@@ -1,31 +1,6 @@
 <?xml version="1.0"?>
 <labwc_config>
 
-  <!-- labwc-autostart rotates the DSI panel's *display* output 90deg CCW
-       (wlr-randr's transform flag, output DSI-1, value 90), but that
-       doesn't rotate the touch digitizer's coordinates to match - taps
-       land in the wrong place relative to what's visually shown, even
-       though gesture-relative interactions like pinch-zoom still "work"
-       since they only read relative motion between two touch points, not
-       absolute position.
-
-       IMPORTANT: every rotation value tried before this one silently had
-       zero effect - the file had a syntax error (a literal double-hyphen
-       inside this very comment, which XML forbids in comment content, not
-       just the "wlr-randr" example above's flags) that made labwc reject
-       the whole file and fall back to defaults every single boot,
-       regardless of what the calibrationMatrix said. Confirmed via
-       labwc's own debug log: "read config file ... rc.xml" immediately
-       followed by "error parsing config file". If touch ever needs
-       recalibrating again, verify the file actually parses (that log
-       line) before assuming the matrix value itself is wrong.
-
-       Tried so far, testing each on the real hardware (none confirmed
-       correct yet, since none of them were actually being applied):
-       90deg CW, 180deg, a computed 45deg CCW matrix, removing calibration
-       entirely, and now 90deg CCW - this is the first one being tested
-       with the parse error actually fixed, so treat all prior "results"
-       as meaningless. -->
   <libinput>
     <device category="touch">
       <calibrationMatrix>0 1 0 -1 0 1</calibrationMatrix>
