@@ -48,7 +48,15 @@ rm -f "/etc/systemd/system/dashboard-kiosk@.service"
 
 echo "Enabling console autologin for tty1..."
 mkdir -p /etc/systemd/system/getty@tty1.service.d
-install -m 644 "$SCRIPT_DIR/getty-autologin.conf" /etc/systemd/system/getty@tty1.service.d/autologin.conf
+# %I in a getty@.service template expands to the tty name (e.g. "tty1"), not
+# a username - --autologin needs the literal username, so this is generated
+# per-install rather than copied from a static file (learned this the hard
+# way: --autologin %I tries to authenticate as a user named "tty1").
+cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf <<EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin ${KIOSK_USER} --noclear %I \$TERM
+EOF
 systemctl daemon-reload
 # The old setup disabled getty@tty1 entirely (cage needed sole ownership of
 # the tty); the new approach needs it enabled again, now with autologin.
