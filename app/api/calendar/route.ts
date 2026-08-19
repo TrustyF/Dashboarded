@@ -9,7 +9,7 @@ import { readFile } from "node:fs/promises";
 // was ever pushed anywhere with them inline.
 
 const TOKEN_PATH = process.env.GOOGLE_TOKEN_PATH ?? "/data/tokens/google_refresh_token.json";
-const REVALIDATE_SECONDS = 1800;
+const REVALIDATE_SECONDS = 3600; // 1 hour
 
 type CalendarEvent = {
   id: string;

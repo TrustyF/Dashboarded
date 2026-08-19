@@ -1,52 +1,84 @@
 "use client";
 
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useFitbit } from "@/lib/hooks";
-import WeightChart from "@/components/charts/WeightChart";
-import DiffNumber from "@/components/fitbit/DiffNumber";
+import { avgDiff, lastValue } from "@/lib/fitbit-metrics";
+import StatCard from "@/components/stats/StatCard";
+import RangeSelector from "@/components/health/RangeSelector";
 import styles from "./page.module.sass";
 
-// Visual port of HealthView.vue.
+// ECharts is a ~650KB chunk - loading it eagerly blocks hydration (and so
+// the SWR fetch that clears the "Loading…" state) behind that download+parse
+// on top of the page's own JS. Deferring it keeps the shell interactive and
+// the data fetch running while the chart chunk loads in the background.
+const WeightChart = dynamic(() => import("@/components/charts/WeightChart"), { ssr: false });
 
-type Point = { dateTime: string; value: number | null };
-
-// Port of weight_store.js's diff getters. The original divided by a
-// hardcoded 10 regardless of how many points were actually in the trailing
-// window, which understates the average (and inflates the diff) whenever
-// there's less than 10 days of history - divides by the actual window size
-// here instead.
-function lastDiff(points: Point[] | undefined): number | null {
-  if (!points || points.length < 2) return null;
-  const current = points[points.length - 1].value;
-  const prev = points[points.length - 2].value;
-  if (current == null || prev == null) return null;
-  return Math.round((current - prev) * 10) / 10;
-}
-
-function avgDiff(points: Point[] | undefined): number | null {
-  if (!points || points.length < 1) return null;
-  const current = points[points.length - 1].value;
-  if (current == null) return null;
-  const window = points.slice(-11, -1);
-  if (window.length === 0) return null;
-  const avg = window.reduce((sum, p) => sum + (p.value ?? 0), 0) / window.length;
-  return Math.round((current - avg) * 10) / 10;
-}
-
+// Google Fit/Health Connect style overview: quick-glance stat tiles up top,
+// the detailed trend chart underneath.
 export default function HealthPage() {
-  const { data, isLoading } = useFitbit();
+  const [days, setDays] = useState(29);
+  const { data, isLoading } = useFitbit(days);
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.graph}>
-        {isLoading || !data?.weight?.length ? <p>Loading…</p> : <WeightChart weight={data.weight} />}
+      <div className={styles.header}>
+        <h1 className={styles.title}>Health</h1>
+        <RangeSelector value={days} onChange={setDays} />
       </div>
 
-      <div className={styles.diffWrapper}>
-        <DiffNumber number={lastDiff(data?.weight)} title="Weight diff" />
-        <DiffNumber number={avgDiff(data?.weight)} title="Avg weight diff" />
-        <DiffNumber number={lastDiff(data?.fat)} title="Fat diff" />
-        <DiffNumber number={avgDiff(data?.fat)} title="Avg fat diff" />
-      </div>
+      {isLoading ? (
+        <p>Loading…</p>
+      ) : data?.error ? (
+        <p>Fitbit is rate-limiting requests right now - try again in a bit.</p>
+      ) : !data?.weight?.length ? (
+        <p>No weight data for this range.</p>
+      ) : (
+        <>
+          <div className={styles.statGrid}>
+            <StatCard
+              label="Weight"
+              value={lastValue(data.weight)}
+              unit="kg"
+              diff={avgDiff(data.weight)}
+              color="#81b29a"
+              sparkline={data.weight.map((p: { value: number | null }) => p.value)}
+            />
+            <StatCard
+              label="Body fat"
+              value={lastValue(data.fat)}
+              unit="%"
+              diff={avgDiff(data.fat)}
+              color="#e07a5f"
+              sparkline={data.fat.map((p: { value: number | null }) => p.value)}
+            />
+            <StatCard
+              label="BMI"
+              value={lastValue(data.bmi)}
+              unit=""
+              diff={avgDiff(data.bmi)}
+              color="#5b9bd5"
+              sparkline={data.bmi.map((p: { value: number | null }) => p.value)}
+            />
+            <StatCard
+              label="Steps (5d)"
+              value={lastValue(data.steps)}
+              unit=""
+              diff={avgDiff(data.steps)}
+              color="#f2cc8f"
+              sparkline={data.steps.map((p: { value: number | null }) => p.value)}
+              goodDirection="up"
+            />
+          </div>
+
+          <div className={styles.trendCard}>
+            <div className={styles.trendHeader}>Weight &amp; body fat trend</div>
+            <div className={styles.trendChart}>
+              <WeightChart weight={data.weight} fat={data.fat} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

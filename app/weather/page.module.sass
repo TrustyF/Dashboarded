@@ -1,28 +1,62 @@
+// Kiosk display is a fixed 1280x720 with no scroll - height:100vh + overflow
+// hidden is a hard ceiling. .trendChart is the only flexible element
+// (flex:1); .forecastCard is fixed-height on purpose so it can't compete with
+// the chart for space - everything else stays compact and content-sized.
 .wrapper
-  position: relative
   display: flex
-  flex-flow: row wrap
-  justify-content: space-around
-  align-items: center
-  gap: 1.5em
-  width: 100%
-  min-height: 100vh
+  flex-flow: column
+  gap: 0.6em
+  height: 100vh
+  overflow: hidden
   padding: 1em
+  max-width: 60em
+  margin: 0 auto
+  box-sizing: border-box
 
 .header
   display: flex
-  flex-flow: column
   align-items: center
-  justify-content: center
-  gap: 1.5em
+  justify-content: space-between
+  flex-shrink: 0
 
-.footer
-  display: flex
-  flex-flow: column nowrap
+.title
+  font-size: 1.4rem
+  font-weight: 600
+  margin: 0
+
+.statGrid
+  display: grid
+  grid-template-columns: repeat(3, 1fr)
   gap: 1em
-  justify-content: center
-  align-items: center
+  flex-shrink: 0
 
-.chartCard
-  width: min(30em, 50vw)
-  height: 40vh
+.trendCard
+  background: #16191d
+  border-radius: 1em
+  padding: 0.75em 1.5em
+  display: flex
+  flex-flow: column
+  gap: 0.5em
+  flex: 1
+  min-height: 0
+
+.trendHeader
+  font-size: 0.85rem
+  font-weight: 500
+  opacity: 0.6
+  text-transform: uppercase
+  letter-spacing: 0.05em
+  flex-shrink: 0
+
+.trendChart
+  flex: 1
+  min-height: 0
+
+.forecastCard
+  background: #16191d
+  border-radius: 1em
+  padding: 0.6em 1.5em
+  display: flex
+  flex-flow: column
+  gap: 0.35em
+  flex-shrink: 0

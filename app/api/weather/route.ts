@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 
 const LAT = process.env.WEATHER_LAT ?? "49.2497";
 const LON = process.env.WEATHER_LON ?? "-123.1193";
-const REVALIDATE_SECONDS = 1800; // 30 min, same as the Flask cache timeout
+const REVALIDATE_SECONDS = 10 * 60; // 10 mins
 
 type DailyBlock = {
   temperature_2m_min: number[];

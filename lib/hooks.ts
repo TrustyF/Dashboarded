@@ -24,7 +24,7 @@ export function useSensorHistory() {
   return useSWR("/api/sensors", fetcher, { refreshInterval: 10_000 });
 }
 
-export function useFitbit(timeDelta = 29) {
+export function useFitbit(timeDelta = 300) {
   return useSWR(`/api/fitbit?time_delta=${timeDelta}`, fetcher, { refreshInterval: 60 * 60_000 });
 }
 

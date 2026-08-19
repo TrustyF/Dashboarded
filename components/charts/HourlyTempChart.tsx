@@ -1,52 +1,86 @@
 "use client";
 
-import "@/lib/chart-setup";
-import { Line } from "react-chartjs-2";
+import ReactEChartsCore from "echarts-for-react/lib/core";
+import { echarts, THEME_NAME } from "@/lib/echarts-setup";
 
 type Props = {
   times: string[];
   temps: number[];
   apparentTemps?: number[];
+  precipitation?: number[];
 };
+
+// Open-Meteo's hourly.time is ISO "YYYY-MM-DDTHH:MM" - the chart only spans a
+// few hours, so the date part is redundant clutter on the tick labels.
+function timeOnly(isoString: string): string {
+  const match = /T(\d{2}:\d{2})/.exec(isoString);
+  return match ? match[1] : isoString;
+}
 
 // Replaces components/weather/graphs/DayTempGraph.vue / ForecastGraph.vue with
 // a single reusable chart driven by plain arrays instead of Vue-specific props.
-export default function HourlyTempChart({ times, temps, apparentTemps }: Props) {
-  const datasets = [
+export default function HourlyTempChart({ times, temps, apparentTemps, precipitation }: Props) {
+  // Right margin has to fit each line's endLabel text (near the last data
+  // point) and the precipitation axis's own tick labels, which sit further out.
+  const gridRight = 60 + (apparentTemps ? 30 : 0) + (precipitation ? 70 : 0);
+
+  const series: Record<string, unknown>[] = [
     {
-      label: "Temperature",
+      name: "Temperature",
+      type: "line",
       data: temps,
-      borderColor: "#5b9bd5",
-      backgroundColor: "rgba(91, 155, 213, 0.15)",
-      fill: true,
-      tension: 0.35,
-      pointRadius: 0,
+      showSymbol: false,
+      smooth: 0.35,
+      areaStyle: { opacity: 0.15 },
+      color: "#5b9bd5",
+      endLabel: { show: true, formatter: "{a}", color: "#5b9bd5" },
     },
   ];
 
   if (apparentTemps) {
-    datasets.push({
-      label: "Feels like",
+    series.push({
+      name: "Feels like",
+      type: "line",
       data: apparentTemps,
-      borderColor: "#9aa0a6",
-      backgroundColor: "transparent",
-      fill: false,
-      tension: 0.35,
-      pointRadius: 0,
+      showSymbol: false,
+      smooth: 0.35,
+      color: "#9aa0a6",
+      endLabel: { show: true, formatter: "{a}", color: "#9aa0a6" },
+    });
+  }
+
+  if (precipitation) {
+    series.push({
+      name: "Precipitation",
+      type: "line",
+      yAxisIndex: 1,
+      data: precipitation,
+      showSymbol: false,
+      smooth: 0.35,
+      color: "#3fb8af",
+      endLabel: { show: true, formatter: "{a}", color: "#3fb8af" },
     });
   }
 
   return (
-    <Line
-      data={{ labels: times, datasets }}
-      options={{
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { type: "time", time: { unit: "hour" }, grid: { display: false } },
-          y: { ticks: { callback: (v) => `${v}°` } },
-        },
-        plugins: { legend: { display: Boolean(apparentTemps) } },
+    <ReactEChartsCore
+      echarts={echarts}
+      theme={THEME_NAME}
+      style={{ height: "100%", width: "100%" }}
+      option={{
+        tooltip: { trigger: "axis" },
+        grid: { left: 50, right: gridRight, top: 16, bottom: 30 },
+        xAxis: { type: "category", boundaryGap: false, data: times, axisLabel: { formatter: timeOnly } },
+        yAxis: [
+          { type: "value", scale: true, axisLabel: { formatter: "{value}°" } },
+          {
+            type: "value",
+            show: Boolean(precipitation),
+            splitLine: { show: false },
+            axisLabel: { show:false, formatter: "{value}mm" },
+          },
+        ],
+        series,
       }}
     />
   );

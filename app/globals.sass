@@ -10,9 +10,15 @@
   box-sizing: border-box
   margin: 0
   font-weight: normal
-  // Kiosk display has no mouse - Wayland's cursor is client-controlled, so
-  // this tells Chromium to tell the compositor to hide it entirely, rather
-  // than needing any compositor-level cursor theme hackery.
+
+// Kiosk display has no mouse - Wayland's cursor is client-controlled, so
+// this tells Chromium to tell the compositor to hide it entirely, rather
+// than needing any compositor-level cursor theme hackery. Scoped to
+// [data-kiosk], which layout.tsx only sets in production, so the cursor
+// stays visible during local dev.
+[data-kiosk] *,
+[data-kiosk] *::before,
+[data-kiosk] *::after
   cursor: none
 
 // Target hardware is the DSI panel (Raspberry Pi Touch Display 2, native
