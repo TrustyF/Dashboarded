@@ -25,7 +25,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Installing labwc + chromium..."
 apt-get update
-apt-get install -y --no-install-recommends labwc chromium curl wlr-randr
+# libinput-tools isn't needed to run the kiosk - it's `libinput list-devices`,
+# for debugging touch calibration (pi-setup/rc.xml) if taps ever misbehave.
+apt-get install -y --no-install-recommends labwc chromium curl wlr-randr libinput-tools
 
 echo "Installing wait-for-dashboard.sh..."
 install -m 755 "$SCRIPT_DIR/wait-for-dashboard.sh" /usr/local/bin/wait-for-dashboard.sh
