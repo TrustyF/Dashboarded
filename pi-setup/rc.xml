@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<labwc_config>
+
+  <!-- labwc-autostart rotates the DSI panel's *display* output 90deg CCW
+       (`wlr-randr --output DSI-1 --transform 90`), but that doesn't rotate
+       the touch digitizer's coordinates to match - taps land in the wrong
+       place relative to what's visually shown (e.g. the on-screen bottom
+       edge maps to touch input from a different physical edge of the
+       panel), even though gesture-relative interactions like pinch-zoom
+       still "work" since they only read relative motion between two touch
+       points, not absolute position.
+
+       This matrix should counter-rotate touch input to match the 90deg CCW
+       display transform - NOT verified against the physical hardware.
+       If taps still land offset/mirrored after this, the rotation is
+       probably the wrong direction: try "0 -1 1 1 0 0" (90deg CW) instead. -->
+  <libinput>
+    <device category="touch">
+      <calibrationMatrix>0 1 0 -1 0 1</calibrationMatrix>
+    </device>
+  </libinput>
+
+</labwc_config>

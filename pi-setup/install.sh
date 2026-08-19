@@ -33,6 +33,7 @@ install -m 755 "$SCRIPT_DIR/wait-for-dashboard.sh" /usr/local/bin/wait-for-dashb
 echo "Installing labwc autostart for user: $KIOSK_USER"
 install -d -o "$KIOSK_USER" -g "$KIOSK_USER" "$KIOSK_HOME/.config/labwc"
 install -m 755 -o "$KIOSK_USER" -g "$KIOSK_USER" "$SCRIPT_DIR/labwc-autostart" "$KIOSK_HOME/.config/labwc/autostart"
+install -m 644 -o "$KIOSK_USER" -g "$KIOSK_USER" "$SCRIPT_DIR/rc.xml" "$KIOSK_HOME/.config/labwc/rc.xml"
 
 echo "Wiring labwc to launch on console login..."
 BASH_PROFILE="$KIOSK_HOME/.bash_profile"
