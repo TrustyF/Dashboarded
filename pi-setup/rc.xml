@@ -1,18 +1,21 @@
 <?xml version="1.0"?>
 <labwc_config>
 
-  <!-- No touch calibration here on purpose - see project history. The
-       initial symptom (tapping Nav's bottom reveal strip didn't work, even
-       though gesture-relative interactions like pinch-zoom did) looked like
-       the classic "display rotated via wlr-randr but touch input wasn't"
-       problem. Tried 90deg CW, 90deg CCW, and a computed 45deg CCW
-       calibrationMatrix in turn, testing each on the real hardware - none
-       were right, and the final measurement (90deg further CCW on top of
-       the 90deg CW matrix) nets out to 0deg. So the touch digitizer was
-       already reporting correctly-rotated coordinates the whole time; the
-       calibration attempts were themselves the problem, not the fix. The
-       real bug was something else (see Nav.tsx/touch-action history in
-       app/globals.sass) - if taps ever misbehave again, don't reach for a
-       calibrationMatrix first. -->
+  <!-- labwc-autostart rotates the DSI panel's *display* output 90deg CCW
+       (`wlr-randr --output DSI-1 --transform 90`), but that doesn't rotate
+       the touch digitizer's coordinates to match - taps land in the wrong
+       place relative to what's visually shown, even though gesture-relative
+       interactions like pinch-zoom still "work" since they only read
+       relative motion between two touch points, not absolute position.
+
+       Tried so far, testing each on the real hardware: 90deg CW, 90deg CCW,
+       a computed 45deg CCW matrix, and removing calibration entirely
+       (concluded net 0deg from measurements at the time). None of those
+       held up - now trying 180deg instead of the original 90deg CW attempt. -->
+  <libinput>
+    <device category="touch">
+      <calibrationMatrix>-1 0 1 0 -1 1</calibrationMatrix>
+    </device>
+  </libinput>
 
 </labwc_config>
