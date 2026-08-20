@@ -6,11 +6,11 @@
 .EXAMPLE
   .\scripts\deploy-to-pi.ps1
   .\scripts\deploy-to-pi.ps1 -SkipApp              # only rebuild sensor-poller
-  .\scripts\deploy-to-pi.ps1 -PiHost pi@192.168.1.50 -PiPath /home/pi/Dashboarded
+  .\scripts\deploy-to-pi.ps1 -PiHost pi@192.168.1.50 -PiPath /home/pi/dashboarded
 #>
 param(
     [string]$PiHost = "arthur@dashboard",
-    [string]$PiPath = "~/Dashboarded",
+    [string]$PiPath = "~/dashboarded",
     [switch]$SkipApp,
     [switch]$SkipSensorPoller
 )
@@ -78,6 +78,9 @@ $envFile = Join-Path $repoRoot ".env.local.production"
 if (-not (Test-Path $envFile)) {
     throw ".env.local.production not found at $envFile - the Pi's app container needs this (env_file in docker-compose.yml). Restore it before deploying."
 }
+
+ssh $PiHost "mkdir -p $PiPath"
+Invoke-Native "mkdir -p $PiPath on the Pi"
 
 Write-Host "Copying image(s), docker-compose.yml, and .env.local.production to ${PiHost}:${PiPath} ..."
 foreach ($tarName in $tarNames) {

@@ -58,12 +58,12 @@ export default function WeatherPage() {
           iconLabel={conditionTitle}
         />
         <StatCard
-          label="Feels like"
-          value={Math.round(current.apparent_temperature)}
-          unit="°"
-          diff={netChange(nextTwoHours(hourly.apparent_temperature))}
-          color="#9aa0a6"
-          sparkline={nextTwoHours(hourly.apparent_temperature)}
+          label="UV Index"
+          value={Math.round(current.uv_index)}
+          unit=""
+          diff={netChange(nextTwoHours(hourly.uv_index))}
+          color="#f2c94c"
+          sparkline={nextTwoHours(hourly.uv_index)}
           goodDirection="neutral"
         />
         <StatCard
@@ -92,7 +92,7 @@ export default function WeatherPage() {
           <DailyTempChart
             times={daily.time}
             highs={daily.temperature_2m_max}
-            lows={daily.temperature_2m_min}
+            sunshineHours={(daily.sunshine_duration as number[] | undefined)?.map((s) => s / 3600)}
             precipitation={hasPrecipitation ? daily.precipitation_sum : undefined}
           />
         </div>

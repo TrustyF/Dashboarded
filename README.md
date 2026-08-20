@@ -39,7 +39,7 @@ images straight to the Pi over `scp` + `docker load` - no registry needed:
 
 Use `-SkipApp` or `-SkipSensorPoller` to rebuild/redeploy just one image. Pass
 `-PiHost`/`-PiPath` if your Pi's hostname or the compose project's directory on
-it differ from the defaults (`arthur@dashboard`, `~/Dashboarded`). Requires
+it differ from the defaults (`arthur@dashboard`, `~/dashboarded`). Requires
 `ssh`/`scp` access to the Pi and Docker Desktop's buildx (already set up if
 `docker buildx version` works).
 
@@ -47,6 +47,13 @@ The app's `npm ci`/`next build` stages run natively (not emulated) since the
 project has no arch-specific deps - only the final runtime image is actually
 arm64, so cross-building shouldn't feel much slower than a normal build. If it
 still does, bump Docker Desktop's CPU/RAM allocation under Settings → Resources.
+
+The Pi only needs `docker-compose.yml` and `.env.local.production` in
+`-PiPath` (default `~/dashboarded`) - `deploy-to-pi.ps1` ships both, plus the
+built image, on every run. It does **not** need a git clone of this repo (that
+was only ever needed back when builds ran on-device) - don't `git pull` there,
+since it'll conflict with whatever `deploy-to-pi.ps1` last overwrote
+`docker-compose.yml` with.
 
 ## Kiosk display (showing it on the Pi's own screen)
 

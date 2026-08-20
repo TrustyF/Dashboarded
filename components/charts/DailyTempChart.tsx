@@ -6,7 +6,7 @@ import { echarts, THEME_NAME } from "@/lib/echarts-setup";
 type Props = {
   times: string[];
   highs: number[];
-  lows?: number[];
+  sunshineHours?: number[];
   precipitation?: number[];
 };
 
@@ -18,42 +18,71 @@ function weekday(isoDate: string): string {
 }
 
 // Daily counterpart to the old HourlyTempChart - same reusable chart shape,
-// driven by per-day high/low/precipitation arrays instead of hourly ones.
-export default function DailyTempChart({ times, highs, lows, precipitation }: Props) {
+// driven by per-day high/sunshine/precipitation arrays instead of hourly ones.
+export default function DailyTempChart({ times, highs, sunshineHours, precipitation }: Props) {
   // Right margin has to fit each line's endLabel text (near the last data
-  // point) and the precipitation axis's own tick labels, which sit further out.
-  const gridRight = 60 + (lows ? 30 : 0) + (precipitation ? 70 : 0);
+  // point) and the extra axes' own tick labels, which sit further out.
+  const gridRight = 60 + (sunshineHours ? 30 : 0) + (precipitation ? 70 : 0);
 
   const series: Record<string, unknown>[] = [
+    // Solid, card-colored area under the Temp curve - sits above the other
+    // lines but below Temp's own (still translucent) fill, so anything
+    // under the curve is fully hidden rather than just blended/dimmed.
     {
-      name: "High",
+      name: "Temp mask",
       type: "line",
+      z: 9,
       data: highs,
       showSymbol: false,
       smooth: 0.35,
-      areaStyle: { opacity: 0.15 },
-      color: "#5b9bd5",
+      silent: true,
+      tooltip: { show: false },
+      lineStyle: { opacity: 0 },
+      areaStyle: { color: "#16191d", opacity: 1 },
+    },
+    {
+      name: "Temp",
+      type: "line",
+      z: 10,
+      data: highs,
+      showSymbol: false,
+      smooth: 0.35,
+      areaStyle: { opacity: 0.55 },
       endLabel: { show: true, formatter: "{a}", color: "#5b9bd5" },
     },
   ];
 
-  if (lows) {
+  const yAxis: Record<string, unknown>[] = [
+    { type: "value", scale: true, axisLabel: { formatter: "{value}°" } },
+  ];
+
+  if (sunshineHours) {
+    yAxis.push({
+      type: "value",
+      show: false,
+      min: 0,
+    });
     series.push({
-      name: "Low",
+      name: "Sunshine",
       type: "line",
-      data: lows,
+      yAxisIndex: yAxis.length - 1,
+      data: sunshineHours,
       showSymbol: false,
       smooth: 0.35,
-      color: "#9aa0a6",
-      endLabel: { show: true, formatter: "{a}", color: "#9aa0a6" },
+      color: "#f2c94c",
+      endLabel: { show: true, formatter: "{a}", color: "#f2c94c" },
     });
   }
 
   if (precipitation) {
+    yAxis.push({
+      type: "value",
+      show: false,
+    });
     series.push({
       name: "Precipitation",
       type: "line",
-      yAxisIndex: 1,
+      yAxisIndex: yAxis.length - 1,
       data: precipitation,
       showSymbol: false,
       smooth: 0.35,
@@ -71,15 +100,15 @@ export default function DailyTempChart({ times, highs, lows, precipitation }: Pr
         tooltip: { trigger: "axis" },
         grid: { left: 50, right: gridRight, top: 16, bottom: 30 },
         xAxis: { type: "category", boundaryGap: false, data: times, axisLabel: { formatter: weekday } },
-        yAxis: [
-          { type: "value", scale: true, axisLabel: { formatter: "{value}°" } },
-          {
-            type: "value",
-            show: Boolean(precipitation),
-            splitLine: { show: false },
-            axisLabel: { show: false, formatter: "{value}mm" },
-          },
-        ],
+        yAxis,
+        visualMap: {
+          show: false,
+          seriesIndex: 1,
+          dimension: 1,
+          min: Math.min(...highs),
+          max: Math.max(...highs),
+          inRange: { color: ["#5b9bd5", "#3fb8af", "#e8c15a", "#e0703f"] },
+        },
         series,
       }}
     />

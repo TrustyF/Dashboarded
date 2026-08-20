@@ -27,7 +27,7 @@ export async function GET() {
 
   const forecastUrl =
     `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&timezone=auto&forecast_days=7` +
-    `&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover` +
+    `&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,uv_index` +
     `&hourly=temperature_2m,apparent_temperature,precipitation_probability,weather_code,cloud_cover,` +
     `sunshine_duration,precipitation,uv_index,shortwave_radiation&forecast_hours=12` +
     `&daily=weather_code,precipitation_sum,temperature_2m_max,temperature_2m_min,precipitation_probability_mean,` +
