@@ -1,6 +1,8 @@
 // True global rules only - everything else lives in colocated *.module.sass
 // files next to the component/page that uses it.
 
+@use "variables" as v
+
 :root
   color-scheme: dark
 
@@ -45,5 +47,5 @@ body
   min-height: 100vh
   line-height: 1
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif
-  background: #0b0d10
-  color: #f2f2f2
+  background: v.$bg
+  color: v.$text

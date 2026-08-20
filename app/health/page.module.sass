@@ -1,6 +1,8 @@
 // Kiosk display is a fixed 1280x720 with no scroll - height:100vh + overflow
 // hidden is a hard ceiling, and .trendChart is the only flexible element
 // (flex:1), so everything else here has to stay compact and content-sized.
+@use "../variables" as v
+
 .wrapper
   display: flex
   flex-flow: column
@@ -30,7 +32,7 @@
   flex-shrink: 0
 
 .trendCard
-  background: #16191d
+  background: v.$card-bg
   border-radius: 1em
   padding: 0.75em 1.5em
   display: flex

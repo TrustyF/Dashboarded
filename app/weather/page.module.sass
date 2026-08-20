@@ -2,6 +2,8 @@
 // hidden is a hard ceiling. .trendChart is the only flexible element
 // (flex:1); .forecastCard is fixed-height on purpose so it can't compete with
 // the chart for space - everything else stays compact and content-sized.
+@use "../variables" as v
+
 .wrapper
   display: flex
   flex-flow: column
@@ -31,7 +33,7 @@
   flex-shrink: 0
 
 .trendCard
-  background: #16191d
+  background: v.$card-bg
   border-radius: 1em
   padding: 0.75em 1.5em
   display: flex
@@ -53,7 +55,7 @@
   min-height: 0
 
 .forecastCard
-  background: #16191d
+  background: v.$card-bg
   border-radius: 1em
   padding: 0.6em 1.5em
   display: flex

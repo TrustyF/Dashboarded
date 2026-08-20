@@ -1,6 +1,8 @@
+@use "../../app/variables" as t
+
 .card
   position: relative
-  background: #16191d
+  background: t.$card-bg
   border-radius: 1em
   padding: 0.7em 1.1em
   display: flex
@@ -18,7 +20,7 @@
 .label
   font-size: 0.85rem
   font-weight: 500
-  opacity: 0.6
+  color: t.$text-muted
   text-transform: uppercase
   letter-spacing: 0.05em
 
@@ -39,6 +41,20 @@
   height: 1.6em
   width: 1.6em
   object-fit: cover
+
+// SVG icons (e.g. UV state) are tinted via mask instead of baking a fill
+// into the file, so they pick up t.$text-muted like the rest of the card
+// chrome and stay in step if that token changes.
+.iconMask
+  height: 1.6em
+  width: 1.6em
+  background-color: t.$text-muted
+  mask-size: contain
+  mask-repeat: no-repeat
+  mask-position: center
+  -webkit-mask-size: contain
+  -webkit-mask-repeat: no-repeat
+  -webkit-mask-position: center
 
 .emoji
   font-size: 1.4em

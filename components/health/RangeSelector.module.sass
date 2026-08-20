@@ -1,11 +1,13 @@
+@use "../../app/variables" as v
+
 .wrapper
   display: flex
   gap: 0.5em
 
 .chip
   font: inherit
-  color: #9aa0a6
-  background: #16191d
+  color: v.$text-muted
+  background: v.$card-bg
   border: none
   border-radius: 1em
   padding: 0.4em 1em
@@ -15,4 +17,4 @@
 
 .active
   background: #81b29a
-  color: #0b0d10
+  color: v.$bg

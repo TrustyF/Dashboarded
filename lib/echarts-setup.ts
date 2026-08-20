@@ -4,6 +4,9 @@ import {
   DataZoomComponent,
   GridComponent,
   LegendComponent,
+  MarkAreaComponent,
+  MarkLineComponent,
+  MarkPointComponent,
   TitleComponent,
   TooltipComponent,
   VisualMapComponent,
@@ -22,6 +25,9 @@ echarts.use([
   TitleComponent,
   DataZoomComponent,
   VisualMapComponent,
+  MarkAreaComponent,
+  MarkLineComponent,
+  MarkPointComponent,
   CanvasRenderer,
 ]);
 

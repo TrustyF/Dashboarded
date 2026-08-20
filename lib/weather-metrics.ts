@@ -20,11 +20,17 @@ export function uvCategory(uvIndex: number | null | undefined): string | undefin
 }
 
 // Sunglasses once it's worth squinting about, sunscreen once it's worth
-// burning about, a warning once it's worth avoiding altogether.
+// burning about, a warning once it's worth avoiding altogether. Filenames
+// match public/assets/weather/icons/svg/*.svg - add a threshold/icon pair
+// here as more states get an asset.
+const UV_ICONS: { threshold: number; icon: string }[] = [
+  { threshold: 8, icon: "warning" },
+  { threshold: 6, icon: "sunscreen" },
+  { threshold: 3, icon: "sunglasses" },
+];
+
 export function uvIcon(uvIndex: number | null | undefined): string | undefined {
   if (uvIndex == null) return undefined;
-  if (uvIndex >= 8) return "⚠️";
-  if (uvIndex >= 6) return "🧴";
-  if (uvIndex >= 3) return "🕶️";
-  return undefined;
+  const match = UV_ICONS.find(({ threshold }) => uvIndex >= threshold);
+  return match ? `/assets/weather/icons/svg/${match.icon}.svg` : undefined;
 }

@@ -27,7 +27,16 @@ export default function StatCardShell({ label, icon, iconAlt, iconLabel, emoji, 
           <div className={styles.iconGroup}>
             {iconLabel && <span className={styles.iconLabel}>{iconLabel}</span>}
             {icon ? (
-              <img className={styles.icon} src={icon} alt={iconAlt ?? ""} />
+              icon.endsWith(".svg") ? (
+                <span
+                  className={styles.iconMask}
+                  style={{ WebkitMaskImage: `url(${icon})`, maskImage: `url(${icon})` }}
+                  role="img"
+                  aria-label={iconAlt ?? ""}
+                />
+              ) : (
+                <img className={styles.icon} src={icon} alt={iconAlt ?? ""} />
+              )
             ) : (
               <span className={styles.emoji} role="img" aria-label={iconAlt ?? ""}>
                 {emoji}

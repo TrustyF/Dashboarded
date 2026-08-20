@@ -28,7 +28,7 @@ export default function WeatherPage() {
   }
 
   const { current, hourly, daily } = data;
-  const testUvIndex = 5; // TEMP: fake value to preview the UV icon thresholds
+  const uvIndex = Math.round(current.uv_index);
   const [conditionTitle, conditionIcon] = CODE_MAP[current.weather_code] ?? CODE_MAP[999];
   const conditionIconSrc = conditionIcon !== "undefined" ? `/assets/weather/icons/v1/${conditionIcon}.png` : undefined;
 
@@ -60,15 +60,15 @@ export default function WeatherPage() {
         />
         <StatCard
           label="UV Index"
-          value={Math.round(testUvIndex*10)/10}
-          unit={uvCategory(testUvIndex) ?? ""}
+          value={uvIndex}
+          unit={uvCategory(uvIndex) ?? ""}
           diffUnit=""
           diff={netChange(nextTwoHours(hourly.uv_index))}
           color="#f2c94c"
           sparkline={nextTwoHours(hourly.uv_index)}
           goodDirection="neutral"
-          emoji={uvIcon(testUvIndex)}
-          iconAlt={uvCategory(testUvIndex)}
+          icon={uvIcon(uvIndex)}
+          iconAlt={uvCategory(uvIndex)}
         />
         <StatCard
           label="Precipitation"
@@ -97,7 +97,8 @@ export default function WeatherPage() {
             times={daily.time}
             highs={daily.temperature_2m_max}
             sunshineHours={(daily.sunshine_duration as number[] | undefined)?.map((s) => s / 3600)}
-            precipitation={hasPrecipitation ? daily.precipitation_sum : undefined}
+            hourlyPrecipitation={hasPrecipitation ? (daily.precipitation_hourly as number[] | undefined) : undefined}
+            hourlyPrecipitationTimes={hasPrecipitation ? (daily.precipitation_hourly_times as string[] | undefined) : undefined}
           />
         </div>
       </div>

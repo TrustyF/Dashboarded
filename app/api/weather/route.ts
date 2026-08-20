@@ -17,6 +17,8 @@ type DailyBlock = {
   temperature_day_range?: number[];
   temperature_day_range_times?: string[];
   precipitation_sum?: number[];
+  precipitation_hourly?: number[];
+  precipitation_hourly_times?: string[];
   [key: string]: unknown;
 };
 
@@ -38,13 +40,23 @@ export async function GET() {
     `&hourly=temperature_2m&start_date=${today}&end_date=${tomorrow}` +
     `&start_hour=${today}T00:00&end_hour=${tomorrow}T09:00`;
 
-  const [forecastRes, dayRangeRes] = await Promise.all([
+  // Separate request (rather than widening the main `hourly` block's
+  // forecast_hours=12 window) so the daily chart's hour-by-hour rain bands
+  // can cover the full 7-day forecast without inflating every other hourly
+  // series the rest of the app only ever reads the next 12h of.
+  const weekPrecipUrl =
+    `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&timezone=auto` +
+    `&forecast_days=7&hourly=precipitation`;
+
+  const [forecastRes, dayRangeRes, weekPrecipRes] = await Promise.all([
     fetch(forecastUrl, { next: { revalidate: REVALIDATE_SECONDS } }),
     fetch(dayRangeUrl, { next: { revalidate: REVALIDATE_SECONDS } }),
+    fetch(weekPrecipUrl, { next: { revalidate: REVALIDATE_SECONDS } }),
   ]);
 
   const forecast = await forecastRes.json();
   const dayRange = await dayRangeRes.json();
+  const weekPrecip = await weekPrecipRes.json();
 
   const daily: DailyBlock = forecast.daily;
 
@@ -53,6 +65,8 @@ export async function GET() {
   );
   daily.temperature_day_range = dayRange.hourly?.temperature_2m;
   daily.temperature_day_range_times = dayRange.hourly?.time;
+  daily.precipitation_hourly = weekPrecip.hourly?.precipitation;
+  daily.precipitation_hourly_times = weekPrecip.hourly?.time;
 
   return NextResponse.json({
     current: forecast.current,
