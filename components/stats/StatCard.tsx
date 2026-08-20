@@ -25,6 +25,7 @@ type Props = {
   icon?: string;
   iconAlt?: string;
   iconLabel?: string;
+  emoji?: string;
   // Swaps out the line sparkline for something else (e.g. StepRings) - the
   // sparkline props above are still required so callers without a custom
   // visual don't need a separate prop shape.
@@ -50,10 +51,11 @@ export default function StatCard({
   icon,
   iconAlt,
   iconLabel,
+  emoji,
   visual,
 }: Props) {
   return (
-    <StatCardShell label={label} icon={icon} iconAlt={iconAlt} iconLabel={iconLabel}>
+    <StatCardShell label={label} icon={icon} iconAlt={iconAlt} iconLabel={iconLabel} emoji={emoji}>
       <div className={styles.value}>
         {value != null ? value : "—"}
         <span className={styles.unit}>{unit}</span>

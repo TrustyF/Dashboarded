@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useSensorHistory, useWeather } from "@/lib/hooks";
-import { netChange } from "@/lib/weather-metrics";
+import { netChange, uvCategory, uvIcon } from "@/lib/weather-metrics";
 import { CODE_MAP } from "@/components/weather/WeatherSummary";
 import ForecastStrip from "@/components/weather/ForecastStrip";
 import StatCard from "@/components/stats/StatCard";
@@ -28,6 +28,7 @@ export default function WeatherPage() {
   }
 
   const { current, hourly, daily } = data;
+  const testUvIndex = 5; // TEMP: fake value to preview the UV icon thresholds
   const [conditionTitle, conditionIcon] = CODE_MAP[current.weather_code] ?? CODE_MAP[999];
   const conditionIconSrc = conditionIcon !== "undefined" ? `/assets/weather/icons/v1/${conditionIcon}.png` : undefined;
 
@@ -59,12 +60,15 @@ export default function WeatherPage() {
         />
         <StatCard
           label="UV Index"
-          value={Math.round(current.uv_index)}
-          unit=""
+          value={Math.round(testUvIndex*10)/10}
+          unit={uvCategory(testUvIndex) ?? ""}
+          diffUnit=""
           diff={netChange(nextTwoHours(hourly.uv_index))}
           color="#f2c94c"
           sparkline={nextTwoHours(hourly.uv_index)}
           goodDirection="neutral"
+          emoji={uvIcon(testUvIndex)}
+          iconAlt={uvCategory(testUvIndex)}
         />
         <StatCard
           label="Precipitation"
