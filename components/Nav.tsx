@@ -13,7 +13,6 @@ import styles from "./Nav.module.sass";
 
 const LINKS = [
   { href: "/", icon: "bi-house-fill", iconInactive: "bi-house", label: "Home" },
-  { href: "/home2", icon: "bi-grid-fill", iconInactive: "bi-grid", label: "Home 2" },
   { href: "/weather", icon: "bi-cloud-fill", iconInactive: "bi-cloud", label: "Weather" },
   { href: "/spotify", icon: "bi-music-note", iconInactive: "bi-music-note", label: "Spotify" },
   { href: "/health", icon: "bi-lungs-fill", iconInactive: "bi-lungs", label: "Health" },

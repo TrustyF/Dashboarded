@@ -1,16 +1,16 @@
-// .decorator is nested here (rather than a sibling top-level rule) so its
-// selector specificity (two classes) beats the bare `h1` rule above it (one
-// class + one tag) - same ordering the original relied on via a shared
-// `.temp_single_wrapper` prefix on both rules.
+// .decorator used to be absolutely positioned off .wrapper's right edge,
+// which let it poke outside the wrapper's own box whenever a parent
+// (e.g. a shrunk stat card) clipped or measured that box - it wasn't part of
+// the flow contributing to .wrapper's width. Laying both h1s out in a flex
+// row instead keeps the degree symbol inside .wrapper's actual bounds while
+// still reading as a small top-aligned superscript.
 .wrapper
-  position: relative
+  display: flex
+  align-items: flex-start
 
   h1
     font-size: calc(5em * var(--size, 1))
     line-height: 1
 
   .decorator
-    position: absolute
-    right: calc(-0.6em * max(var(--size, 1), 1))
-    top: 0
     font-size: calc(2em * max(var(--size, 1), 0.25))

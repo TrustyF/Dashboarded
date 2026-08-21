@@ -1,7 +1,7 @@
 import styles from "./StatCardShell.module.sass";
 
 type Props = {
-  label: string;
+  label?: string;
   icon?: string;
   iconAlt?: string;
   // Text shown next to the icon (e.g. a weather condition name) - distinct
@@ -22,30 +22,32 @@ type Props = {
 export default function StatCardShell({ label, icon, iconAlt, iconLabel, emoji, className, children }: Props) {
   return (
     <div className={[styles.card, className].filter(Boolean).join(" ")}>
-      <div className={styles.topRow}>
-        <div className={styles.label}>{label}</div>
-        {(icon || emoji) && (
-          <div className={styles.iconGroup}>
-            {iconLabel && <span className={styles.iconLabel}>{iconLabel}</span>}
-            {icon ? (
-              icon.endsWith(".svg") ? (
-                <span
-                  className={styles.iconMask}
-                  style={{ WebkitMaskImage: `url(${icon})`, maskImage: `url(${icon})` }}
-                  role="img"
-                  aria-label={iconAlt ?? ""}
-                />
+      {(label || icon || emoji) && (
+        <div className={styles.topRow}>
+          {label && <div className={styles.label}>{label}</div>}
+          {(icon || emoji) && (
+            <div className={styles.iconGroup}>
+              {iconLabel && <span className={styles.iconLabel}>{iconLabel}</span>}
+              {icon ? (
+                icon.endsWith(".svg") ? (
+                  <span
+                    className={styles.iconMask}
+                    style={{ WebkitMaskImage: `url(${icon})`, maskImage: `url(${icon})` }}
+                    role="img"
+                    aria-label={iconAlt ?? ""}
+                  />
+                ) : (
+                  <img className={styles.icon} src={icon} alt={iconAlt ?? ""} />
+                )
               ) : (
-                <img className={styles.icon} src={icon} alt={iconAlt ?? ""} />
-              )
-            ) : (
-              <span className={styles.emoji} role="img" aria-label={iconAlt ?? ""}>
-                {emoji}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+                <span className={styles.emoji} role="img" aria-label={iconAlt ?? ""}>
+                  {emoji}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       {children}
     </div>
   );

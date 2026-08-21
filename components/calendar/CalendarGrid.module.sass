@@ -12,26 +12,24 @@
     font-size: 1.1em
     flex-shrink: 0
 
-// Height-first: .gridArea fills whatever vertical room is left after the
-// h1 (bounded - it's a flex:1 child of a definite-height column, so it can
-// never grow past the card). container-type:size turns that resolved box
-// into a query container, so .grid can derive its WIDTH purely from that
-// container's height (a month is 5 or 6 rows tall, passed in as --rows) -
-// 7 columns' worth of cqh, divided by the row count - keeping cells square
-// while guaranteeing the grid never exceeds the available height.
+// Always fills whatever vertical room is left after the h1 (unconditional -
+// flex:1 in this definite-height column, not throttled by anything on the
+// width side). CalendarGrid.tsx measures this box's real rendered height
+// via ResizeObserver and computes an exact per-cell pixel size from it, so
+// there's no CSS sizing to do here beyond providing the box to measure.
 .gridArea
   flex: 1
   min-height: 0
-  min-width: 0
-  container-type: size
 
+// Column count only - actual cell size comes from CalendarGrid.tsx as
+// inline width/height per day, and the grid's own box sizes to fit them
+// (an ordinary intrinsic size, so it flows up into .calendarContent's row
+// layout in page.module.sass correctly, letting CalendarGrid's wrapper
+// claim exactly the width it needs and push CalendarTimeline into
+// whatever's left).
 .grid
   display: grid
-  grid-template-columns: repeat(7, 1fr)
-  gap: 0.15em
-  height: 100%
-  width: calc(700cqh / var(--rows))
-  max-width: 100%
+  grid-template-columns: repeat(7, auto)
 
 .day
   display: flex

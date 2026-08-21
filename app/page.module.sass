@@ -13,8 +13,8 @@
   box-sizing: border-box
 
 .statGrid
-  display: grid
-  grid-template-columns: 2fr 1fr 1fr
+  display: flex
+  flex-flow: row
   gap: 1em
   flex-shrink: 0
 
@@ -22,8 +22,31 @@
 // scale to fill the tile's full height instead of sitting at their intrinsic
 // content size.
 .clockCard
+  flex: 1 1 0%
+  //min-width: 0
+
+// Steps has grow priority (flex:1, basis 0%) and claims whatever width
+// .weatherCard doesn't need, same "one side grows, one side shrinks" split
+// as .subGrid/.calendarShell below.
+.stepsCard
+  flex: 1 1 0%
+  min-width: 0
+
+// WeatherSummary centers itself in the space below the label instead of
+// sitting at its intrinsic content height, matching how .clockCard fills
+// its tile - same > div:last-child target since StatCardShell always
+// renders children after the optional label/icon topRow. flex:0 1 auto
+// sizes it to its own content and never grows past that, so it's the tile
+// that gives up width first (down to min-width:0) when .stepsCard grows.
+.weatherCard
+  flex: 0 1 auto
+  min-width: 0
+
   > div:last-child
     flex: 1
+    display: flex
+    align-items: center
+    justify-content: center
 
 .footer
   display: flex
@@ -32,49 +55,46 @@
   flex: 1
   min-height: 0
 
-  > *
-    flex: 1
-    min-height: 0
-
-// Left half of .footer: Steps on top, UV + Precipitation sharing a row
-// beneath it.
-.leftColumn
-  display: flex
-  flex-flow: column
-  gap: 1em
-  min-width: 0
-  min-height: 0
-
-  // Steps fills whatever room is left; UV/Precipitation stay pinned to their
-  // own content height (.subGrid below) so they match the Temperature card's
-  // height in .statGrid instead of stretching to fill the column.
-  > :first-child
-    flex: 1
-    min-height: 0
-
+// The 2x2 stat grid absorbs whatever width .calendarShell doesn't claim
+// (flex:1, basis 0%) and is allowed to shrink below its content size
+// (min-width:0 here + minmax(0, 1fr) tracks below) so it's the side that
+// gives when space is tight, not the calendar.
 .subGrid
   display: grid
-  grid-template-columns: repeat(2, 1fr)
+  grid-template-columns: repeat(2, minmax(0, 1fr))
   gap: 1em
-  flex-shrink: 0
+  flex: 1 1 0%
+  min-width: 0
 
-// Agenda + month grid combined into one card, taking the right half of the
-// row (Steps takes the other half via .footer's even flex split). Grid on
-// the left, agenda timeline on the right. StatCardShell's .card uses
-// align-items:flex-start, so it never stretches this to the card's height on
-// its own (same reason .clockCard needs its own flex:1 override above) -
-// flex:1 here is what actually fills the card instead of collapsing to the
-// h1's content height.
+  > *
+    min-width: 0
+
+// Agenda + month grid combined into one card, taking priority over .subGrid
+// for width: flex:0 0 auto sizes it to its own content and never shrinks it
+// to make room, so .subGrid is what shrinks first when the row is tight.
+.calendarShell
+  flex: 0 0 auto
+  min-height: 0
+
 .calendarContent
   display: flex
   flex-flow: row
-  flex: 1
+  flex: 2
   gap: 1.5em
   width: 100%
   min-height: 0
   overflow: hidden
 
-  > *
+  // CalendarGrid has priority: flex-shrink:0 means it always renders at its
+  // own height-locked, always-square size (see CalendarGrid.module.sass)
+  // and is never squeezed narrower to make room. CalendarTimeline (flex:1,
+  // min-width:0) absorbs whatever width that leaves behind and is what
+  // actually shrinks if the two don't both fit.
+  > :first-child
+    flex: 0 0 auto
+    min-height: 0
+
+  > :last-child
     flex: 1
     min-width: 0
     min-height: 0

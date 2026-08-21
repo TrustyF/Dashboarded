@@ -30,6 +30,7 @@ type Props = {
   // sparkline props above are still required so callers without a custom
   // visual don't need a separate prop shape.
   visual?: React.ReactNode;
+  className?: string;
 };
 
 // Google Fit/Health Connect style tile: label, headline number, a diff pill,
@@ -53,15 +54,18 @@ export default function StatCard({
   iconLabel,
   emoji,
   visual,
+  className,
 }: Props) {
   return (
-    <StatCardShell label={label} icon={icon} iconAlt={iconAlt} iconLabel={iconLabel} emoji={emoji}>
+    <StatCardShell label={label} icon={icon} iconAlt={iconAlt} iconLabel={iconLabel} emoji={emoji} className={className}>
       <div className={styles.value}>
         {value != null ? value : "—"}
         <span className={styles.unit}>{unit}</span>
       </div>
       <DiffPill value={diff} unit={diffUnit ?? unit} goodDirection={goodDirection} />
-      {visual ?? <Sparkline data={sparkline} color={color} min={sparklineMin} max={sparklineMax} />}
+      <div className={styles.trend}>
+        {visual ?? <Sparkline data={sparkline} color={color} min={sparklineMin} max={sparklineMax} />}
+      </div>
     </StatCardShell>
   );
 }

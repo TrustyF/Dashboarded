@@ -121,7 +121,14 @@ export async function GET(req: NextRequest) {
     formatted.push({
       id: e.id,
       created: e.created,
-      date: new Date(dtString).toISOString(),
+      // Timed events convert to a real UTC instant. All-day events only have
+      // a bare calendar date ("2026-08-22") with no timezone - running that
+      // through `new Date(...).toISOString()` parses it as UTC midnight,
+      // which rolls back to the previous day once the frontend re-zeroes it
+      // in local time for any timezone behind UTC. Appending a bare time
+      // (no "Z"/offset) makes the Date constructor parse it as local
+      // midnight instead, matching what the frontend expects.
+      date: e.start.dateTime ? new Date(dtString).toISOString() : `${dtString}T00:00:00`,
       // No dateTime means Google only gave us a calendar date (an all-day
       // event) - there's no real clock time to show for these.
       allDay: !e.start.dateTime,
