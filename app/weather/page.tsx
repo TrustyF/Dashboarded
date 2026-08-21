@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { useSensorHistory, useWeather } from "@/lib/hooks";
 import { netChange, uvCategory, uvIcon } from "@/lib/weather-metrics";
 import { CODE_MAP } from "@/components/weather/WeatherSummary";
-import ForecastStrip from "@/components/weather/ForecastStrip";
 import StatCard from "@/components/stats/StatCard";
 import styles from "./page.module.sass";
 
@@ -97,15 +96,12 @@ export default function WeatherPage() {
             times={daily.time}
             highs={daily.temperature_2m_max}
             sunshineHours={(daily.sunshine_duration as number[] | undefined)?.map((s) => s / 3600)}
+            hourlyTimes={daily.precipitation_hourly_times as string[] | undefined}
             hourlyPrecipitation={hasPrecipitation ? (daily.precipitation_hourly as number[] | undefined) : undefined}
-            hourlyPrecipitationTimes={hasPrecipitation ? (daily.precipitation_hourly_times as string[] | undefined) : undefined}
+            hourlyTemps={daily.temperature_hourly as number[] | undefined}
+            weatherCodes={daily.weather_code}
           />
         </div>
-      </div>
-
-      <div className={styles.forecastCard}>
-        <div className={styles.trendHeader}>Next few days</div>
-        <ForecastStrip maxTemps={daily.temperature_2m_max} weatherCodes={daily.weather_code} />
       </div>
     </div>
   );

@@ -2,15 +2,22 @@
 
 import ReactEChartsCore from "echarts-for-react/lib/core";
 import { echarts, THEME_NAME } from "@/lib/echarts-setup";
+import { CODE_MAP } from "@/components/weather/WeatherSummary";
 
 type Props = {
   times: string[];
   highs: number[];
   sunshineHours?: number[];
-  // Hourly precipitation covering the same week as `times`, used to draw
-  // one rain band per rainy hour instead of one per rainy day.
+  // Shared hourly timestamps covering the same week as `times`, plus the
+  // precipitation/temperature series aligned to them - used to draw the
+  // Temp line and the rain bands at hour resolution instead of one point
+  // per day. Falls back to `times`/`highs` (one point per day) when absent.
+  hourlyTimes?: string[];
   hourlyPrecipitation?: number[];
-  hourlyPrecipitationTimes?: string[];
+  hourlyTemps?: number[];
+  // Per-day Open-Meteo weather code (same source as ForecastStrip), shown as
+  // a small condition icon above each day's label.
+  weatherCodes?: number[];
 };
 
 // Open-Meteo's daily.time is a plain "YYYY-MM-DD" - show the weekday instead
@@ -40,61 +47,158 @@ export default function DailyTempChart({
   times,
   highs,
   sunshineHours,
+  hourlyTimes,
   hourlyPrecipitation,
-  hourlyPrecipitationTimes,
+  hourlyTemps,
+  weatherCodes,
 }: Props) {
   // Right margin has to fit each line's endLabel text (near the last data
   // point) and the extra axes' own tick labels, which sit further out.
   const gridRight = 60 + (sunshineHours ? 30 : 0);
 
-  // Pad the category axis with a blank slot on each side, and extrapolate the
-  // Temp line one step past the real first/last high (via the edge slope) so
-  // it visibly runs past the plotted week instead of stopping dead at it.
-  // xAxis.min/max then window the axis back down to the real range, pushing
-  // those padding points - and the line between them - outside the grid.
-  const paddedTimes = ["", ...times, ""];
-  const leftSlope = highs.length > 1 ? highs[1] - highs[0] : 0;
-  const rightSlope = highs.length > 1 ? highs[highs.length - 1] - highs[highs.length - 2] : 0;
-  const paddedHighs = [highs[0] - leftSlope, ...highs, highs[highs.length - 1] + rightSlope];
+  // The tick/gridline axis runs on day *boundaries* (midnight), not day
+  // values, so ticks land at 12am of the day before and after each day's
+  // span rather than on the day itself - one boundary per real day, plus
+  // one synthetic boundary the day after the last, so the final day gets a
+  // closing tick too. A separate axis (below) draws the weekday labels
+  // centered inside each day's slot between two consecutive boundaries.
+  function nextDay(dateStr: string): string {
+    const d = new Date(`${dateStr}T00:00`);
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+  const boundaries = [...times, nextDay(times[times.length - 1])];
+
+  const paddedBoundaries = ["", ...boundaries, ""];
+
+  // Per-day condition icon shown above the weekday label (same icon set as
+  // ForecastStrip). ECharts axisLabel can't take arbitrary JSX, so each
+  // day's icon is registered as its own named `rich` style (keyed by index)
+  // and the formatter below stitches the right token in per label.
+  const dayIconRich: Record<string, unknown> = {};
+  times.forEach((_, i) => {
+    const code = weatherCodes?.[i];
+    if (code == null) return;
+    const [, icon] = CODE_MAP[code] ?? CODE_MAP[999];
+    if (icon === "undefined") return;
+    dayIconRich[`icon${i}`] = {
+      height: 18,
+      width: 18,
+      align: "center",
+      verticalAlign: "middle",
+      backgroundColor: { image: `/assets/weather/icons/v1/${icon}.png` },
+    };
+  });
   const pad = <T,>(arr?: T[]) => (arr ? [null, ...arr, null] : undefined);
 
-  // Bucket the hourly precipitation series by calendar day, so each day's
-  // rain (if any) can be drawn as its own run of hour-wide bands rather than
-  // one flat wash for the whole day.
-  const hoursByDay = new Map<string, number[]>();
-  hourlyPrecipitationTimes?.forEach((t, i) => {
+  // Temp and rain both plot on the hidden value axis (below) rather than the
+  // boundary axis - ECharts markArea (and, here, a sub-day-resolution line)
+  // on a category axis only accepts its exact tick values (label or integer
+  // index), so the fractional "partway through day N" coordinates an
+  // hour-resolution point needs would silently fail to render there. A
+  // value axis has no such restriction. Day dayIdx spans value-axis units
+  // [dayIdx, dayIdx+1), matching that axis's min/max below 1:1 with the
+  // category axis's visible day range.
+  //
+  // Bucket the shared hourly series by calendar day, so each day's rain (if
+  // any) can be drawn as its own run of hour-wide bands, and the Temp line
+  // can be drawn through each hour's actual reading, instead of one flat
+  // value for the whole day.
+  const hoursByDay = new Map<string, { mm: number; temp: number | null }[]>();
+  hourlyTimes?.forEach((t, i) => {
     const date = t.slice(0, 10);
     if (!hoursByDay.has(date)) hoursByDay.set(date, []);
-    hoursByDay.get(date)!.push(hourlyPrecipitation?.[i] ?? 0);
+    hoursByDay.get(date)!.push({
+      mm: hourlyPrecipitation?.[i] ?? 0,
+      temp: hourlyTemps?.[i] ?? null,
+    });
   });
 
-  // Rain bands live on a second, hidden value axis (below) rather than the
-  // main category axis - ECharts markArea on a category axis only accepts
-  // its exact tick values (label or integer index), so the fractional
-  // "partway through day N" coordinates an hour-band needs would silently
-  // fail to render there. A value axis has no such restriction. Day dayIdx
-  // spans value-axis units [dayIdx, dayIdx+1), matching that axis's
-  // min/max below 1:1 with the category axis's visible day range.
-  const rainSegments: [Record<string, unknown>, Record<string, unknown>][] = [];
+  const hourPoints: { x0: number; x1: number; mm: number }[] = [];
+  const hourlyTempPoints: [number, number][] = [];
   times.forEach((date, dayIdx) => {
     const hours = hoursByDay.get(date);
     if (!hours?.length) return;
-    hours.forEach((mm, h) => {
-      if (mm == null || mm <= 0.1) return;
-      const x0 = dayIdx + h / hours.length;
-      const x1 = dayIdx + (h + 1) / hours.length;
-      rainSegments.push([
-        { xAxis: x0, itemStyle: { color: `rgba(91, 155, 213, ${rainAlpha(mm)})` } },
-        { xAxis: x1 },
-      ]);
+    hours.forEach(({ mm, temp }, h) => {
+      hourPoints.push({
+        x0: dayIdx + h / hours.length,
+        x1: dayIdx + (h + 1) / hours.length,
+        mm: mm ?? 0,
+      });
+      if (temp != null) hourlyTempPoints.push([dayIdx + (h + 0.5) / hours.length, temp]);
     });
+  });
+
+  // A bezier `smooth` curve still passes exactly through every data point,
+  // so hour-to-hour jitter in the raw forecast reads as little kinks no
+  // matter how high that setting goes - a centered moving average over the
+  // readings themselves is what actually flattens it, while still tracking
+  // the real rise/fall of each day.
+  const TEMP_SMOOTHING_WINDOW_HOURS = 3;
+  function movingAverage(points: [number, number][], window: number): [number, number][] {
+    const half = Math.floor(window / 2);
+    return points.map(([x], i) => {
+      const slice = points.slice(Math.max(0, i - half), Math.min(points.length, i + half + 1));
+      const avg = slice.reduce((sum, [, y]) => sum + y, 0) / slice.length;
+      return [x, avg];
+    });
+  }
+
+  // Temp plots at each reading's own position when hourly data is
+  // available, falling back to one point at each day's *center* -
+  // dayIdx+0.5 - lining up under that day's centered label. Either way, a
+  // lead-in point extrapolated from the first two real points sits just off
+  // the value axis's min:0, so the line visibly runs in from off-grid
+  // instead of starting dead at the edge; the axis's own right-hand margin
+  // (max is one full day past the last day's center) means the line can
+  // just end cleanly without needing the same trick on that side.
+  const realTempPoints: [number, number][] = hourlyTempPoints.length
+    ? movingAverage(hourlyTempPoints, TEMP_SMOOTHING_WINDOW_HOURS)
+    : highs.map((v, i) => [i + 0.5, v]);
+  const [p0, p1] = realTempPoints;
+  const leadX = -0.5;
+  const leadSlope = p1 ? (p1[1] - p0[1]) / (p1[0] - p0[0]) : 0;
+  const tempData: [number, number][] = [
+    [leadX, p0[1] - leadSlope * (p0[0] - leadX)],
+    ...realTempPoints,
+  ];
+
+  // Collapse contiguous rainy hours into one run so the wash reads as a
+  // continuous gradient instead of a strip of hard-edged blocks - each run
+  // becomes a single rectangle with a horizontal gradient stop per hour,
+  // so intensity still steps with the actual per-hour rainfall.
+  const rainRuns: { x0: number; x1: number; mm: number }[][] = [];
+  let currentRun: { x0: number; x1: number; mm: number }[] = [];
+  hourPoints.forEach((p) => {
+    if (p.mm > 0.1) {
+      currentRun.push(p);
+    } else if (currentRun.length) {
+      rainRuns.push(currentRun);
+      currentRun = [];
+    }
+  });
+  if (currentRun.length) rainRuns.push(currentRun);
+
+  const rainSegments = rainRuns.map((run) => {
+    const colorStops = run.map((p, i) => ({
+      offset: (i + 0.5) / run.length,
+      color: `rgba(91, 155, 213, ${rainAlpha(p.mm)})`,
+    }));
+    return [
+      {
+        xAxis: run[0].x0,
+        itemStyle: { color: { type: "linear", x: 0, y: 0, x2: 1, y2: 0, colorStops } },
+      },
+      { xAxis: run[run.length - 1].x1 },
+    ];
   });
 
   const series: Record<string, unknown>[] = [
     {
       name: "Temp",
       type: "line",
-      data: paddedHighs,
+      xAxisIndex: 1,
+      data: tempData,
       showSymbol: false,
       smooth: 0.35,
       clip: false,
@@ -116,21 +220,21 @@ export default function DailyTempChart({
     { type: "value", scale: true, axisLabel: { formatter: "{value}°" } },
   ];
 
-  if (sunshineHours) {
-    yAxis.push({
-      type: "value",
-      show: false,
-      min: 0,
-    });
-    series.push({
-      name: "Sunshine",
-      type: "bar",
-      yAxisIndex: yAxis.length - 1,
-      data: pad(sunshineHours),
-      barMaxWidth: 14,
-      itemStyle: { color: "#f2c94c", opacity: 0.55, borderRadius: [4, 4, 0, 0] },
-    });
-  }
+  // if (sunshineHours) {
+  //   yAxis.push({
+  //     type: "value",
+  //     show: false,
+  //     min: 0,
+  //   });
+  //   series.push({
+  //     name: "Sunshine",
+  //     type: "bar",
+  //     yAxisIndex: yAxis.length - 1,
+  //     data: pad(sunshineHours),
+  //     barMaxWidth: 14,
+  //     itemStyle: { color: "#f2c94c", opacity: 0.55, borderRadius: [4, 4, 0, 0] },
+  //   });
+  // }
 
   return (
     <ReactEChartsCore
@@ -139,25 +243,44 @@ export default function DailyTempChart({
       style={{ height: "100%", width: "100%" }}
       option={{
         tooltip: { trigger: "axis" },
-        grid: { left: 50, right: gridRight, top: 16, bottom: 30 },
+        grid: { left: 50, right: gridRight, top: 16, bottom: 25 },
         xAxis: [
           {
             type: "category",
             boundaryGap: false,
-            data: paddedTimes,
-            min: times[0],
-            max: times[times.length - 1],
-            axisLabel: { formatter: weekday },
+            data: paddedBoundaries,
+            min: boundaries[0],
+            max: boundaries[boundaries.length - 1],
+            axisLabel: { show: false },
+            axisTick: { show: true, alignWithLabel: true, inside: true, length: 20, lineStyle: { color: "#23272c" } },
+            splitLine: { show: false },
           },
-          { type: "value", show: false, min: 0, max: times.length - 1 },
+          { type: "value", show: false, min: 0, max: times.length },
+          {
+            type: "category",
+            data: times,
+            position: "bottom",
+            offset: 0,
+            axisLine: { show: false },
+            axisTick: { show: false },
+            splitLine: { show: false },
+            axisLabel: {
+              formatter: (value: string, index: number) => {
+                const label = `${weekday(value)} ${Math.round(highs[index])}°`;
+                return dayIconRich[`icon${index}`] ? `{icon${index}|} ${label}` : label;
+              },
+              rich: dayIconRich,
+              fontSize: 14,
+            },
+          },
         ],
         yAxis,
         visualMap: {
           show: false,
           seriesIndex: 0,
           dimension: 1,
-          min: Math.min(...highs),
-          max: Math.max(...highs),
+          min: Math.min(...realTempPoints.map((p) => p[1])),
+          max: Math.max(...realTempPoints.map((p) => p[1])),
           inRange: { color: ["#5b9bd5", "#3fb8af", "#e8c15a", "#e0703f"] },
         },
         series,

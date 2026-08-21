@@ -8,6 +8,8 @@ import { NextResponse } from "next/server";
 const LAT = process.env.WEATHER_LAT ?? "49.2497";
 const LON = process.env.WEATHER_LON ?? "-123.1193";
 const REVALIDATE_SECONDS = 10 * 60; // 10 mins
+// Days of forecast shown in the daily chart (Open-Meteo caps this at 16).
+const FORECAST_DAYS = 4;
 
 type DailyBlock = {
   time: string[];
@@ -19,6 +21,7 @@ type DailyBlock = {
   precipitation_sum?: number[];
   precipitation_hourly?: number[];
   precipitation_hourly_times?: string[];
+  temperature_hourly?: number[];
   [key: string]: unknown;
 };
 
@@ -28,7 +31,7 @@ export async function GET() {
   const tomorrow = new Date(now.getTime() + 86400000).toISOString().slice(0, 10);
 
   const forecastUrl =
-    `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&timezone=auto&forecast_days=7` +
+    `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&timezone=auto&forecast_days=${FORECAST_DAYS}` +
     `&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,uv_index` +
     `&hourly=temperature_2m,apparent_temperature,precipitation_probability,weather_code,cloud_cover,` +
     `sunshine_duration,precipitation,uv_index,shortwave_radiation&forecast_hours=12` +
@@ -42,11 +45,11 @@ export async function GET() {
 
   // Separate request (rather than widening the main `hourly` block's
   // forecast_hours=12 window) so the daily chart's hour-by-hour rain bands
-  // can cover the full 7-day forecast without inflating every other hourly
-  // series the rest of the app only ever reads the next 12h of.
+  // and temp line can cover the full 7-day forecast without inflating every
+  // other hourly series the rest of the app only ever reads the next 12h of.
   const weekPrecipUrl =
     `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&timezone=auto` +
-    `&forecast_days=7&hourly=precipitation`;
+    `&forecast_days=${FORECAST_DAYS}&hourly=precipitation,temperature_2m`;
 
   const [forecastRes, dayRangeRes, weekPrecipRes] = await Promise.all([
     fetch(forecastUrl, { next: { revalidate: REVALIDATE_SECONDS } }),
@@ -67,6 +70,7 @@ export async function GET() {
   daily.temperature_day_range_times = dayRange.hourly?.time;
   daily.precipitation_hourly = weekPrecip.hourly?.precipitation;
   daily.precipitation_hourly_times = weekPrecip.hourly?.time;
+  daily.temperature_hourly = weekPrecip.hourly?.temperature_2m;
 
   return NextResponse.json({
     current: forecast.current,
