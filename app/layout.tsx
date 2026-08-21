@@ -1,12 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import Nav from "@/components/Nav";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./globals.sass";
 
-// Self-hosted by Next (no runtime request to Google) - matches base.css's
-// original font-family, which put Inter first ahead of the system stack.
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+// next/font/google's Inter is variable-only (Google's css2 API - the one
+// Next's fetcher uses - only ever serves Inter as a single variable-font
+// file, even when a `weight` array is passed; it just re-declares that same
+// file under multiple font-weight blocks, which doesn't help). The Pi's
+// kiosk Chromium build can't render variable fonts - no error, it just
+// silently falls back to a system sans-serif. Google's legacy /css? API
+// (queried with an old, pre-variable-font user agent) still hands out
+// genuinely distinct static instances per weight, which is what these
+// files are - self-hosted here instead so this doesn't depend on that
+// legacy endpoint staying available. See app/fonts/README.md.
+const inter = localFont({
+  src: [
+    { path: "./fonts/Inter-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/Inter-500.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/Inter-600.woff2", weight: "600", style: "normal" },
+  ],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "Home Dashboard",
