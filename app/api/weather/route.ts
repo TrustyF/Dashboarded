@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
+import { cachedFetch } from "@/lib/api-cache";
 
 // Ported from dashboard_server/flask_blueprints/weather_bp.py.
-// Flask used @cache.cached(timeout=1800) via flask_caching; Next's fetch cache
-// with `next: { revalidate }` gives the same "shared, time-boxed cache" behavior
-// without an extra dependency.
+// Flask used @cache.cached(timeout=1800) via flask_caching; cachedFetch gives
+// the same "shared, time-boxed cache" behavior without an extra dependency.
 
 const LAT = process.env.WEATHER_LAT ?? "49.2497";
 const LON = process.env.WEATHER_LON ?? "-123.1193";
@@ -51,15 +51,11 @@ export async function GET() {
     `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&timezone=auto` +
     `&forecast_days=${FORECAST_DAYS}&hourly=precipitation,temperature_2m`;
 
-  const [forecastRes, dayRangeRes, weekPrecipRes] = await Promise.all([
-    fetch(forecastUrl, { next: { revalidate: REVALIDATE_SECONDS } }),
-    fetch(dayRangeUrl, { next: { revalidate: REVALIDATE_SECONDS } }),
-    fetch(weekPrecipUrl, { next: { revalidate: REVALIDATE_SECONDS } }),
+  const [forecast, dayRange, weekPrecip] = await Promise.all([
+    cachedFetch("weather:forecast", REVALIDATE_SECONDS, () => fetch(forecastUrl).then((r) => r.json())),
+    cachedFetch("weather:day-range", REVALIDATE_SECONDS, () => fetch(dayRangeUrl).then((r) => r.json())),
+    cachedFetch("weather:week-precip", REVALIDATE_SECONDS, () => fetch(weekPrecipUrl).then((r) => r.json())),
   ]);
-
-  const forecast = await forecastRes.json();
-  const dayRange = await dayRangeRes.json();
-  const weekPrecip = await weekPrecipRes.json();
 
   const daily: DailyBlock = forecast.daily;
 

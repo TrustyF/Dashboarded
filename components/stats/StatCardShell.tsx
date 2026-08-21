@@ -10,6 +10,7 @@ type Props = {
   // Emoji alternative to `icon` for tiles that don't have an image asset
   // (e.g. a UV-level glyph) - takes the same slot, image wins if both are set.
   emoji?: string;
+  className?: string;
   children: React.ReactNode;
 };
 
@@ -18,9 +19,9 @@ type Props = {
 // StepRings, ...) into it instead of extending a card's prop surface for
 // every new tile shape. StatCard is the "number + diff + trend" preset built
 // on top of this; new tile shapes can use the shell directly.
-export default function StatCardShell({ label, icon, iconAlt, iconLabel, emoji, children }: Props) {
+export default function StatCardShell({ label, icon, iconAlt, iconLabel, emoji, className, children }: Props) {
   return (
-    <div className={styles.card}>
+    <div className={[styles.card, className].filter(Boolean).join(" ")}>
       <div className={styles.topRow}>
         <div className={styles.label}>{label}</div>
         {(icon || emoji) && (

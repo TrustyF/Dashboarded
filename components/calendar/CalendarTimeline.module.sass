@@ -1,35 +1,57 @@
+@use "../../app/variables" as v
+
 .eventList
   display: flex
   flex-flow: column
-  gap: 0.5em
+  min-width: 0
 
-.eventWrapper
-  display: flex
-  justify-items: flex-start
-
-.header
+// Dot + connecting line on the left, countdown/name stacked on the right -
+// a real "timeline" rail instead of a plain list of rows.
+.row
   display: grid
-  grid-template-columns: 4em auto auto
-  align-items: center
-  gap: 0.8em
-  white-space: nowrap
+  grid-template-columns: auto 1fr
+  column-gap: 0.7em
+  min-width: 0
 
-.timeRemain
-  text-align: right
-  font-size: 1em
-  margin: 0
+.rail
+  display: flex
+  flex-flow: column
+  align-items: center
 
 .dot
-  width: 0.6em
+  width: 0.7em
   aspect-ratio: 1
   border-radius: 50%
+  margin-top: 0.3em
+  flex-shrink: 0
+
+.line
+  flex: 1
+  width: 2px
+  min-height: 0.6em
+  background: rgba(v.$text, 0.12)
+  margin: 0.2em 0
+
+.body
+  min-width: 0
+  padding-bottom: 0.8em
+
+.countdown
+  font-size: 0.7rem
+  font-weight: 600
+  text-transform: uppercase
+  letter-spacing: 0.04em
+  margin-bottom: 0.15em
 
 .name
-  font-size: 1.1em
+  font-size: 1rem
+  font-weight: 500
   line-height: normal
-  text-align: left
-  width: 12em
+  white-space: nowrap
   overflow: hidden
   text-overflow: ellipsis
-  white-space: nowrap
-  margin: 0
+
+.repeatIcon
+  font-size: 0.85em
+  opacity: 0.6
+  margin-right: 0.3em

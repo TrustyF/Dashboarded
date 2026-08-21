@@ -12,8 +12,8 @@ type Props = {
 // Compact inline badge replacement for DiffNumber's big stacked layout -
 // fits inline next to a stat card's headline value, Google Fit/Health style.
 export default function DiffPill({ value, unit, goodDirection = "down" }: Props) {
-  if (value == null) return <span className={styles.pill}>—</span>;
-  if (value === 0) return <span className={styles.pill}>No change</span>;
+  if (value == null) return <span className={styles.pill} style={{visibility:"hidden"}}>—</span>;
+  if (value === 0) return <span className={styles.pill} style={{visibility:"hidden"}}>No change</span>;
 
   const direction = value > 0 ? "up" : "down";
   const judgment = goodDirection === "neutral" ? null : direction === goodDirection ? styles.good : styles.bad;

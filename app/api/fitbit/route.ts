@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
+import { cachedFetch } from "@/lib/api-cache";
 
 // Replaces the legacy Fitbit Web API integration - Fitbit's API is being
 // decommissioned by Google in favor of the Google Health API (same
@@ -64,20 +65,19 @@ async function getAccessToken(): Promise<string> {
 }
 
 async function queryDataPoints<T>(dataType: string, accessToken: string, pageSize: number): Promise<T[]> {
-  const url = `https://health.googleapis.com/v4/users/me/dataTypes/${dataType}/dataPoints?pageSize=${pageSize}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    next: { revalidate: REVALIDATE_SECONDS },
+  return cachedFetch(`fitbit:${dataType}`, REVALIDATE_SECONDS, async () => {
+    const url = `https://health.googleapis.com/v4/users/me/dataTypes/${dataType}/dataPoints?pageSize=${pageSize}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+
+    if (!res.ok) {
+      console.error(`[fitbit] ${dataType} dataPoints failed: ${res.status} ${await res.text()}`);
+      if (res.status === 429) throw new Error("rate-limited");
+      return [];
+    }
+
+    const json = await res.json();
+    return (json.dataPoints ?? []) as T[];
   });
-
-  if (!res.ok) {
-    console.error(`[fitbit] ${dataType} dataPoints failed: ${res.status} ${await res.text()}`);
-    if (res.status === 429) throw new Error("rate-limited");
-    return [];
-  }
-
-  const json = await res.json();
-  return json.dataPoints ?? [];
 }
 
 function toCivilDate(date: Date): CivilDate {
@@ -118,38 +118,62 @@ async function queryMeasurement(
   return out.sort((a, b) => a.dateTime.localeCompare(b.dateTime));
 }
 
-const STEPS_DAYS = 5;
+// Monday 00:00 of the week containing `date` (local time) - matches the
+// Monday-first week CalendarGrid.tsx uses for its month grid.
+function startOfWeek(date: Date): Date {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+  return start;
+}
+
+type StepsWeek = Array<{ dateTime: string; value: number }>;
 
 // The raw `steps` data type is per-minute intervals - up to 10,000 points for
-// just 5 days, which blew past Next's fetch cache size limit. `dailyRollUp`
+// just a week, which blew past Next's fetch cache size limit. `dailyRollUp`
 // (a POST method alongside list/get/create) does the civil-day bucketing
-// server-side instead and hands back one small entry per day.
-async function querySteps(accessToken: string): Promise<Array<{ dateTime: string; value: number }>> {
-  const now = new Date();
-  const start = new Date(now.getTime() - STEPS_DAYS * 86400000);
+// server-side instead and hands back one small entry per day. Also: POST
+// requests aren't eligible for Next's fetch Data Cache at all, so this goes
+// through cachedFetch like everything else here - keyed by the week it
+// covers, which changes on its own once a new week starts, well before the
+// 1h TTL would've expired it anyway.
+async function querySteps(accessToken: string): Promise<StepsWeek> {
+  const start = startOfWeek(new Date());
+  const key = civilDateStr(toCivilDate(start), "");
 
-  const res = await fetch("https://health.googleapis.com/v4/users/me/dataTypes/steps/dataPoints:dailyRollUp", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      range: { start: { date: toCivilDate(start) }, end: { date: toCivilDate(now) } },
-      windowSizeDays: 1,
-    }),
-    next: { revalidate: REVALIDATE_SECONDS },
+  return cachedFetch(`fitbit:steps:${key}`, REVALIDATE_SECONDS, async () => {
+    const end = new Date(start);
+    end.setDate(start.getDate() + 7); // exclusive - covers Mon..Sun of this week
+
+    const res = await fetch("https://health.googleapis.com/v4/users/me/dataTypes/steps/dataPoints:dailyRollUp", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        range: { start: { date: toCivilDate(start) }, end: { date: toCivilDate(end) } },
+        windowSizeDays: 1,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error(`[fitbit] steps dailyRollUp failed: ${res.status} ${await res.text()}`);
+      if (res.status === 429) throw new Error("rate-limited");
+      return [];
+    }
+
+    const json = await res.json();
+    const points = (json.rollupDataPoints ?? []) as StepsRollupPoint[];
+    const byDate = new Map(points.map((p) => [civilDateStr(p.civilStartTime.date, ""), Number(p.steps?.countSum ?? 0)]));
+
+    // The API only returns rows for days it has data for, so today's future
+    // days (and any gaps) are just absent - pad out to all 7 civil dates of
+    // the week so callers (StepRings) always get one entry per day, Mon..Sun.
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(start);
+      day.setDate(start.getDate() + i);
+      const dateTime = civilDateStr(toCivilDate(day), "");
+      return { dateTime, value: byDate.get(dateTime) ?? 0 };
+    });
   });
-
-  if (!res.ok) {
-    console.error(`[fitbit] steps dailyRollUp failed: ${res.status} ${await res.text()}`);
-    if (res.status === 429) throw new Error("rate-limited");
-    return [];
-  }
-
-  const json = await res.json();
-  const points = (json.rollupDataPoints ?? []) as StepsRollupPoint[];
-
-  return points
-    .map((p) => ({ dateTime: civilDateStr(p.civilStartTime.date, ""), value: Number(p.steps?.countSum ?? 0) }))
-    .sort((a, b) => a.dateTime.localeCompare(b.dateTime));
 }
 
 export async function GET(req: NextRequest) {

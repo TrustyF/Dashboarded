@@ -1,4 +1,5 @@
 import type { CalendarEvent } from "./CalendarTimeline";
+import { hexToRgba } from "@/lib/color";
 import styles from "./CalendarGrid.module.sass";
 
 // Port of CalendarGrid.vue - shows the current month, colors days that have
@@ -64,32 +65,36 @@ function buildDaysGrid(today: Date) {
 export default function CalendarGrid({ events }: { events: CalendarEvent[] }) {
   const today = new Date();
   const daysGrid = buildDaysGrid(today);
+  const rows = daysGrid.length / 7;
 
   function eventColorFor(date: Date) {
     const match = events.find((e) => sameDay(new Date(e.date), date));
-    return EVENT_COLORS[String(match?.colorId)] ?? "transparent";
+    if (!match) return "transparent";
+    return EVENT_COLORS[String(match.colorId)] ?? (match.calendarColor ? hexToRgba(match.calendarColor, 0.5) : EVENT_COLORS.null);
   }
 
   return (
     <div className={styles.wrapper}>
       <h1>{today.toLocaleString("en-GB", { year: "numeric", month: "long", day: "2-digit" })}</h1>
-      <div className={styles.grid}>
-        {daysGrid.map(({ date, isNextMonth }) => (
-          <div
-            key={date.toISOString()}
-            className={[
-              styles.day,
-              isNextMonth && styles.next,
-              sameDay(date, today) && styles.today,
-              isPast(date, today) && styles.past,
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            style={{ background: eventColorFor(date) }}
-          >
-            {date.getDate()}
-          </div>
-        ))}
+      <div className={styles.gridArea}>
+        <div className={styles.grid} style={{ "--rows": rows } as React.CSSProperties}>
+          {daysGrid.map(({ date, isNextMonth }) => (
+            <div
+              key={date.toISOString()}
+              className={[
+                styles.day,
+                isNextMonth && styles.next,
+                sameDay(date, today) && styles.today,
+                isPast(date, today) && styles.past,
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              style={{ background: eventColorFor(date) }}
+            >
+              {date.getDate()}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

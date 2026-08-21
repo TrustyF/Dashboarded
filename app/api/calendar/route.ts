@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
+import { cachedFetch } from "@/lib/api-cache";
 
 // Ported from dashboard_server/flask_blueprints/calendar_bp.py.
 //
@@ -41,13 +42,32 @@ async function getAccessToken(): Promise<string> {
 }
 
 async function getEvents(url: string, params: Record<string, string>, accessToken: string) {
-  const query = new URLSearchParams(params);
-  const res = await fetch(`${url}?${query}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    next: { revalidate: REVALIDATE_SECONDS },
+  // Cache key is the base URL only, not the full query - timeMin/timeMax are
+  // millisecond-precision "now" timestamps that differ on every call, which
+  // would otherwise bust the cache every single request.
+  return cachedFetch(`calendar:events:${url}`, REVALIDATE_SECONDS, async () => {
+    const query = new URLSearchParams(params);
+    const res = await fetch(`${url}?${query}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const json = await res.json();
+    return (json.items ?? []) as CalendarEvent[];
   });
-  const json = await res.json();
-  return (json.items ?? []) as CalendarEvent[];
+}
+
+// Events only carry a `colorId` when the user overrides an individual
+// event's color - most events instead just inherit their calendar's own
+// color, which the events.list response doesn't include at all. Without
+// this, every event without a per-event override rendered as a flat grey
+// "no color" placeholder instead of the color it actually shows as in
+// Google Calendar's UI.
+async function getCalendarColor(calendarId: string, accessToken: string): Promise<string | undefined> {
+  return cachedFetch(`calendar:color:${calendarId}`, REVALIDATE_SECONDS, async () => {
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/users/me/calendarList/${encodeURIComponent(calendarId)}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return undefined;
+    const json = await res.json();
+    return json.backgroundColor as string | undefined;
+  });
 }
 
 export async function GET(req: NextRequest) {
@@ -57,6 +77,7 @@ export async function GET(req: NextRequest) {
   const maxFutureIso = new Date(now.getTime() + 50 * 86400000).toISOString();
 
   const accessToken = await getAccessToken();
+  const primaryColor = await getCalendarColor("primary", accessToken);
 
   const primaryEvents = await getEvents(
     "https://www.googleapis.com/calendar/v3/calendars/primary/events",
@@ -101,9 +122,16 @@ export async function GET(req: NextRequest) {
       id: e.id,
       created: e.created,
       date: new Date(dtString).toISOString(),
+      // No dateTime means Google only gave us a calendar date (an all-day
+      // event) - there's no real clock time to show for these.
+      allDay: !e.start.dateTime,
       name: e.summary,
       recurring: isRecurring,
       colorId: e.colorId,
+      // Holiday events already carry their own hardcoded colorId (see above)
+      // and take priority over this on the frontend - only events without an
+      // override fall back to it.
+      calendarColor: primaryColor,
     });
   }
 

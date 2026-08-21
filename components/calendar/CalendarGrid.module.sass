@@ -1,32 +1,55 @@
+@use "../../app/variables" as v
+
 .wrapper
   display: flex
   flex-flow: column nowrap
   gap: 0.4em
+  height: 100%
+  min-height: 0
 
   h1
     margin: 0
     font-size: 1.1em
+    flex-shrink: 0
+
+// Height-first: .gridArea fills whatever vertical room is left after the
+// h1 (bounded - it's a flex:1 child of a definite-height column, so it can
+// never grow past the card). container-type:size turns that resolved box
+// into a query container, so .grid can derive its WIDTH purely from that
+// container's height (a month is 5 or 6 rows tall, passed in as --rows) -
+// 7 columns' worth of cqh, divided by the row count - keeping cells square
+// while guaranteeing the grid never exceeds the available height.
+.gridArea
+  flex: 1
+  min-height: 0
+  min-width: 0
+  container-type: size
 
 .grid
   display: grid
   grid-template-columns: repeat(7, 1fr)
   gap: 0.15em
+  height: 100%
+  width: calc(700cqh / var(--rows))
+  max-width: 100%
 
 .day
-  padding: 0.35em
+  display: flex
+  align-items: center
+  justify-content: center
   font-size: 0.8em
   text-align: center
-  background: #282828
+  background: v.$surface
   border-radius: 0.4em
 
   &.next
-    background: #1b2026
+    background: v.$surface-alt
 
   &.today
-    color: white
-    outline: 2px solid #2e8ae6
+    color: v.$text
+    outline: 2px solid v.$accent
     outline-offset: -2px
 
   &.past
-    color: #282828
-    background: #1f1f1f !important
+    color: v.$surface
+    background: v.$bg !important

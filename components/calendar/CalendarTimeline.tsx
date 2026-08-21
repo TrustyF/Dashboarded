@@ -11,6 +11,11 @@ export type CalendarEvent = {
   name: string;
   date: string;
   colorId?: string | number | null;
+  // Owning calendar's color, hex - fallback for events without their own
+  // colorId override. See app/api/calendar/route.ts's getCalendarColor.
+  calendarColor?: string;
+  recurring?: boolean;
+  allDay?: boolean;
 };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -28,31 +33,31 @@ const EVENT_COLORS: Record<string, string> = {
   "11": "#d62b2b",
 };
 
-function describeCountdown(dateStr: string) {
+function startOfDay(date: Date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function describeCountdown(dateStr: string, allDay: boolean | undefined) {
   const eventDate = new Date(dateStr);
   const now = new Date();
 
   if (eventDate <= now) return { text: "Now", days: 0 };
 
-  const diffMs = eventDate.getTime() - now.getTime();
-  const oneMin = 1000 * 60;
-  const oneHour = oneMin * 60;
-  const oneDay = oneHour * 24;
+  const calendarDaysUntil = Math.round((startOfDay(eventDate).getTime() - startOfDay(now).getTime()) / 86400000);
+  const timeStr = eventDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+  if (calendarDaysUntil === 0) return { text: allDay ? "Today" : timeStr, days: 0 };
+  if (calendarDaysUntil === 1) return { text: allDay ? "Tomorrow" : `Tomorrow at ${timeStr}`, days: 1 };
+
+  const oneDay = 1000 * 60 * 60 * 24;
   const oneMonth = oneDay * 30;
+  const monthsLeft = Math.ceil(((eventDate.getTime() - now.getTime()) / oneMonth) * 10) / 10;
 
-  const minsLeft = Math.ceil(diffMs / oneMin);
-  const hoursLeft = Math.ceil(diffMs / oneHour);
-  const daysLeft = Math.ceil(diffMs / oneDay);
-  const monthsLeft = Math.ceil((diffMs / oneMonth) * 10) / 10;
+  const text = monthsLeft >= 1 ? `${monthsLeft} mth${monthsLeft > 1 ? "s" : ""}` : `${calendarDaysUntil} days`;
 
-  let text = "";
-  if (monthsLeft >= 1) text = `${monthsLeft} mth${monthsLeft > 1 ? "s" : ""}`;
-  else if (daysLeft >= 2) text = `${daysLeft} days`;
-  else if (hoursLeft < 24 && hoursLeft > 3) text = `${Math.round(diffMs / oneHour)} hours`;
-  else if (hoursLeft <= 3 && hoursLeft >= 1) text = `${Math.round((diffMs / oneHour) * 10) / 10} hours`;
-  else if (minsLeft < 60) text = `${Math.round(diffMs / oneMin)} min`;
-
-  return { text, days: daysLeft };
+  return { text, days: calendarDaysUntil };
 }
 
 function relevanceOpacity(days: number) {
@@ -62,33 +67,40 @@ function relevanceOpacity(days: number) {
   return "rgba(255,255,255,0.15)";
 }
 
-function EventRow({ event }: { event: CalendarEvent }) {
-  const [{ text, days }, setCountdown] = useState(() => describeCountdown(event.date));
+function EventRow({ event, isLast }: { event: CalendarEvent; isLast: boolean }) {
+  const [{ text, days }, setCountdown] = useState(() => describeCountdown(event.date, event.allDay));
 
   useEffect(() => {
-    const id = setInterval(() => setCountdown(describeCountdown(event.date)), 2000);
+    const id = setInterval(() => setCountdown(describeCountdown(event.date, event.allDay)), 2000);
     return () => clearInterval(id);
-  }, [event.date]);
+  }, [event.date, event.allDay]);
+
+  const color = EVENT_COLORS[String(event.colorId)] ?? event.calendarColor ?? EVENT_COLORS.null;
 
   return (
-    <div className={styles.eventWrapper}>
-      <div className={styles.header} style={{ color: relevanceOpacity(days) }}>
-        <h2 className={styles.timeRemain}>{text}</h2>
-        <div
-          className={styles.dot}
-          style={{ backgroundColor: EVENT_COLORS[String(event.colorId)] ?? EVENT_COLORS.null }}
-        />
-        <h1 className={styles.name}>{event.name}</h1>
+    <div className={styles.row}>
+      <div className={styles.rail}>
+        <div className={styles.dot} style={{ background: color }} />
+        {!isLast && <div className={styles.line} />}
+      </div>
+      <div className={styles.body} style={{ color: relevanceOpacity(days) }}>
+        <div className={styles.countdown}>{text}</div>
+        <div className={styles.name}>
+          {event.recurring && <i className={`bi bi-arrow-repeat ${styles.repeatIcon}`} aria-label="Recurring event" />}
+          {event.name}
+        </div>
       </div>
     </div>
   );
 }
 
 export default function CalendarTimeline({ events }: { events: CalendarEvent[] }) {
+  const shown = events.slice(0, 5);
+
   return (
     <div className={styles.eventList}>
-      {events.slice(0, 5).map((event) => (
-        <EventRow event={event} key={event.id} />
+      {shown.map((event, i) => (
+        <EventRow event={event} isLast={i === shown.length - 1} key={event.id} />
       ))}
     </div>
   );

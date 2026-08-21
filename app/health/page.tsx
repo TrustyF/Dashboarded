@@ -56,7 +56,7 @@ export default function HealthPage() {
               sparkline={data.fat.map((p: { value: number | null }) => p.value)}
             />
             <StatCard
-              label="Steps (5d)"
+              label="Steps (this week)"
               value={goalProgressPercent(data.steps, STEPS_GOAL)}
               unit="%"
               diff={avgDiff(data.steps)}

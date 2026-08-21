@@ -1,23 +1,80 @@
+// Same fixed-viewport kiosk shell as app/weather/page.module.sass -
+// height:100vh + overflow hidden is a hard ceiling, everything sized to fit
+// rather than scroll.
+@use "./variables" as v
+
 .wrapper
-  position: relative
   display: flex
   flex-flow: column
-  justify-content: space-evenly
   gap: 1em
-  width: 100%
-  min-height: 100vh
+  height: 100vh
+  overflow: hidden
   padding: 1em
+  box-sizing: border-box
 
-.top
-  display: flex
-  flex-flow: row wrap
-  align-items: center
-  justify-content: center
-  gap: 2.5em
+.statGrid
+  display: grid
+  grid-template-columns: 2fr 1fr 1fr
+  gap: 1em
+  flex-shrink: 0
+
+// Time card: stretch the clock into the row beneath the label so its digits
+// scale to fill the tile's full height instead of sitting at their intrinsic
+// content size.
+.clockCard
+  > div:last-child
+    flex: 1
 
 .footer
   display: flex
-  flex-flow: row wrap
-  align-items: center
-  justify-content: space-evenly
+  flex-flow: row
+  gap: 1em
+  flex: 1
+  min-height: 0
+
+  > *
+    flex: 1
+    min-height: 0
+
+// Left half of .footer: Steps on top, UV + Precipitation sharing a row
+// beneath it.
+.leftColumn
+  display: flex
+  flex-flow: column
+  gap: 1em
+  min-width: 0
+  min-height: 0
+
+  // Steps fills whatever room is left; UV/Precipitation stay pinned to their
+  // own content height (.subGrid below) so they match the Temperature card's
+  // height in .statGrid instead of stretching to fill the column.
+  > :first-child
+    flex: 1
+    min-height: 0
+
+.subGrid
+  display: grid
+  grid-template-columns: repeat(2, 1fr)
+  gap: 1em
+  flex-shrink: 0
+
+// Agenda + month grid combined into one card, taking the right half of the
+// row (Steps takes the other half via .footer's even flex split). Grid on
+// the left, agenda timeline on the right. StatCardShell's .card uses
+// align-items:flex-start, so it never stretches this to the card's height on
+// its own (same reason .clockCard needs its own flex:1 override above) -
+// flex:1 here is what actually fills the card instead of collapsing to the
+// h1's content height.
+.calendarContent
+  display: flex
+  flex-flow: row
+  flex: 1
   gap: 1.5em
+  width: 100%
+  min-height: 0
+  overflow: hidden
+
+  > *
+    flex: 1
+    min-width: 0
+    min-height: 0
