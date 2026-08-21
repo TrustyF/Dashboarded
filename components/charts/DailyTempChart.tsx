@@ -31,9 +31,23 @@ function weekday(isoDate: string): string {
 // more saturated band. 4mm/h is already a heavy-rain hour, so that's where
 // the ramp tops out instead of scaling to whatever the wettest hour in the
 // forecast happens to be.
-const RAIN_MIN_ALPHA = 0.08;
-const RAIN_MAX_ALPHA = 0.42;
+const RAIN_MIN_ALPHA = 0.0;
+const RAIN_MAX_ALPHA = 0.75;
 const RAIN_MAX_MM_PER_HOUR = 4;
+// How far each rainy run's wash fades in/out, in hour-widths, before hitting
+// its first/last real reading - 0 is a hard edge right at the rain data,
+// higher values spread the fade further into the dry hours on either side.
+const RAIN_EDGE_FADE_HOURS = 0.25;
+// Opacity the fade settles to at its outermost edge - 0 is fully invisible;
+// raise it for a faint haze instead of a true fade-to-nothing.
+const RAIN_EDGE_ALPHA = 0;
+// Centered moving-average window (in hours) applied to the raw mm readings
+// before they drive band intensity/threshold - raw hourly forecasts can
+// jitter hour to hour, which otherwise reads as a jagged run of bands
+// instead of a smooth rise and fall in intensity.
+const RAIN_SMOOTHING_WINDOW_HOURS = 3;
+// Same idea, applied to the Temp line's hourly readings.
+const TEMP_SMOOTHING_WINDOW_HOURS = 3;
 function rainAlpha(mm: number): number {
   const t = Math.min(mm / RAIN_MAX_MM_PER_HOUR, 1);
   return RAIN_MIN_ALPHA + t * (RAIN_MAX_ALPHA - RAIN_MIN_ALPHA);
@@ -133,8 +147,8 @@ export default function DailyTempChart({
   // so hour-to-hour jitter in the raw forecast reads as little kinks no
   // matter how high that setting goes - a centered moving average over the
   // readings themselves is what actually flattens it, while still tracking
-  // the real rise/fall of each day.
-  const TEMP_SMOOTHING_WINDOW_HOURS = 3;
+  // the real rise/fall of each day. Shared by the Temp line and the rain
+  // bands below.
   function movingAverage(points: [number, number][], window: number): [number, number][] {
     const half = Math.floor(window / 2);
     return points.map(([x], i) => {
@@ -163,13 +177,23 @@ export default function DailyTempChart({
     ...realTempPoints,
   ];
 
+  // Smooth the raw per-hour mm readings before anything else uses them, so
+  // both which hours count as "rainy" (the threshold below) and how intense
+  // each band reads are driven by the smoothed curve, not hour-to-hour noise
+  // in the forecast.
+  const smoothedMm = movingAverage(
+    hourPoints.map((p) => [(p.x0 + p.x1) / 2, p.mm]),
+    RAIN_SMOOTHING_WINDOW_HOURS
+  );
+  const smoothedHourPoints = hourPoints.map((p, i) => ({ ...p, mm: smoothedMm[i][1] }));
+
   // Collapse contiguous rainy hours into one run so the wash reads as a
   // continuous gradient instead of a strip of hard-edged blocks - each run
   // becomes a single rectangle with a horizontal gradient stop per hour,
   // so intensity still steps with the actual per-hour rainfall.
   const rainRuns: { x0: number; x1: number; mm: number }[][] = [];
   let currentRun: { x0: number; x1: number; mm: number }[] = [];
-  hourPoints.forEach((p) => {
+  smoothedHourPoints.forEach((p) => {
     if (p.mm > 0.1) {
       currentRun.push(p);
     } else if (currentRun.length) {
@@ -180,16 +204,31 @@ export default function DailyTempChart({
   if (currentRun.length) rainRuns.push(currentRun);
 
   const rainSegments = rainRuns.map((run) => {
-    const colorStops = run.map((p, i) => ({
-      offset: (i + 0.5) / run.length,
-      color: `rgba(91, 155, 213, ${rainAlpha(p.mm)})`,
-    }));
+    // The rectangle itself is widened by RAIN_EDGE_FADE_HOURS worth of hour
+    // slots on each side, extending it into the surrounding dry hours - the
+    // fade then happens across that padding, from RAIN_EDGE_ALPHA at the
+    // rectangle's true edges up to each real hour's own intensity. Stop
+    // offsets are recomputed against the padded rectangle's own width so
+    // they land in the right place regardless of how much padding is added.
+    const startHourWidth = run[0].x1 - run[0].x0;
+    const endHourWidth = run[run.length - 1].x1 - run[run.length - 1].x0;
+    const rectX0 = run[0].x0 - startHourWidth * RAIN_EDGE_FADE_HOURS;
+    const rectX1 = run[run.length - 1].x1 + endHourWidth * RAIN_EDGE_FADE_HOURS;
+    const rectWidth = rectX1 - rectX0;
+    const colorStops = [
+      { offset: 0, color: `rgba(91, 155, 213, ${RAIN_EDGE_ALPHA})` },
+      ...run.map((p) => ({
+        offset: ((p.x0 + p.x1) / 2 - rectX0) / rectWidth,
+        color: `rgba(91, 155, 213, ${rainAlpha(p.mm)})`,
+      })),
+      { offset: 1, color: `rgba(91, 155, 213, ${RAIN_EDGE_ALPHA})` },
+    ];
     return [
       {
-        xAxis: run[0].x0,
+        xAxis: rectX0,
         itemStyle: { color: { type: "linear", x: 0, y: 0, x2: 1, y2: 0, colorStops } },
       },
-      { xAxis: run[run.length - 1].x1 },
+      { xAxis: rectX1 },
     ];
   });
 
