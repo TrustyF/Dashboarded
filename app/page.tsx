@@ -62,8 +62,8 @@ export default function HomePage() {
 
                     className={styles.stepsCard}
                     label="Steps"
-                    value={goalProgressPercent(fitbit?.steps, STEPS_GOAL)}
-                    valueSize={1.5}
+                    value={null}
+                    valueSize={1}
                     unit="%"
                     diff={null}
                     color={STAT_COLORS.steps}

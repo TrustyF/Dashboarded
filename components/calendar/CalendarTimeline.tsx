@@ -130,7 +130,7 @@ function EventRow({
 }
 
 export default function CalendarTimeline({ events }: { events: CalendarEvent[] }) {
-  const shown = events.slice(0, 20);
+  const shown = events.slice(0, 200);
   const todayEvents = shown.filter((e) => describeCountdown(e.date, e.allDay).days === 0);
   // Recurring events are only worth surfacing on the day they're actually
   // happening - a repeating series doesn't belong in the future timeline,

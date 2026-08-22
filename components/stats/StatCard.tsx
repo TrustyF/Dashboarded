@@ -63,14 +63,9 @@ export default function StatCard({
 }: Props) {
   return (
     <StatCardShell label={label} icon={icon} iconAlt={iconAlt} iconLabel={iconLabel} emoji={emoji} className={className}>
-      <NumberUnit
-        value={value != null ? value : "—"}
-        unit={unit}
-        size={valueSize}
-        unitRatio={0.5}
-        muted
-        className={styles.value}
-      />
+      {value != null && (
+        <NumberUnit value={value} unit={unit} size={valueSize} unitRatio={0.5} muted className={styles.value} />
+      )}
       <DiffPill value={diff} unit={diffUnit ?? unit} goodDirection={goodDirection} />
       <div className={styles.trend}>
         {visual ?? <Sparkline data={sparkline} color={color} min={sparklineMin} max={sparklineMax} />}

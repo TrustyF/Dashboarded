@@ -18,7 +18,6 @@
 // via ResizeObserver and computes an exact per-cell pixel size from it, so
 // there's no CSS sizing to do here beyond providing the box to measure.
 .gridArea
-  position: relative
   flex: 1
   min-height: 0
 
@@ -54,11 +53,11 @@
     color: v.$surface
     background: v.$bg !important
 
-// Anchored to the clicked cell via inline top/left (set from its
-// getBoundingClientRect() in CalendarGrid.tsx) relative to .gridArea.
+// Positioning (fixed placement, viewport clamping, escaping this card's own
+// overflow:hidden) is handled by the Popover shell this renders inside of -
+// this only supplies the visual chrome.
 .tooltip
-  position: absolute
-  z-index: 10
+  position: relative
   min-width: 10em
   max-width: 16em
   padding: 0.5em 0.6em
@@ -68,7 +67,34 @@
   background: v.$surface-alt
   border-radius: 0.4em
   box-shadow: 0 0.2em 0.6em rgba(0, 0, 0, 0.4)
-  font-size: 0.75em
+  font-size: 1em
+  line-height: normal
+
+// `left` is set inline from Popover's arrowOffset, which already accounts
+// for the box having been clamped sideways to stay on-screen - centering
+// via transform here keeps the arrow's *tip* (not its box edge) exactly on
+// that offset regardless of the triangle's width.
+.tooltipArrow
+  position: absolute
+  width: 0
+  height: 0
+  transform: translateX(-50%)
+  border-left: 7px solid transparent
+  border-right: 7px solid transparent
+
+  // Popover renders below the anchor -> connecting edge is the tooltip's
+  // top, arrow points up at the anchor above it.
+  &.below
+    top: -7px
+    border-bottom: 7px solid v.$surface-alt
+
+  // Popover renders above the anchor -> connecting edge is the tooltip's
+  // bottom, arrow points down at the anchor below it. This is the case for
+  // the last week or two of rows in the grid, where there's no viewport
+  // room left below the cell to render into.
+  &.above
+    bottom: -7px
+    border-top: 7px solid v.$surface-alt
 
 .tooltipDate
   font-weight: 600
@@ -90,8 +116,8 @@
   flex: 1
   min-width: 0
   overflow: hidden
-  text-overflow: ellipsis
-  white-space: nowrap
+  //text-overflow: ellipsis
+  //white-space: nowrap
 
 .tooltipTime
   flex-shrink: 0

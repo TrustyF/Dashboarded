@@ -8,8 +8,8 @@ type Props = {
   goal?: number;
 };
 
-const SIZE = 34;
-const STROKE = 6;
+const SIZE = 60;
+const STROKE = 10;
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 

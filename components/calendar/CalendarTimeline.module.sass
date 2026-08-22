@@ -4,8 +4,43 @@
   display: flex
   flex-flow: column
   gap: 0.8em
-  max-width: 12rem
+  max-width: 15rem
   min-width: 0
+  // page.module.sass's .calendarContent forces this flex item's min-height
+  // to 0 (a flex item's default min-height:auto would otherwise refuse to
+  // shrink below its content size, which is what let event lists overflow
+  // .calendarContent's own overflow:hidden and get silently clipped instead
+  // of scrolling) - overflow-y here is what turns that available, bounded
+  // height into an actual scroll area rather than more clipping.
+  overflow-y: auto
+  // "overlay" draws the scrollbar as a floating layer that doesn't reserve
+  // any layout width at all, unlike "auto" which always reserves its track
+  // width from the content box even at 6px, and - the actual point here -
+  // auto-hides after a moment of inactivity the way a native OS scrollbar
+  // does, only reappearing on hover/scroll. It's deprecated in newer
+  // Chromium and unsupported elsewhere, so it's declared *after* auto as a
+  // progressive enhancement - an engine that doesn't recognize the value
+  // ignores this line and keeps the always-visible auto behavior above.
+  overflow-y: overlay
+  // scrollbar-width/-color are the standardized (non-prefixed) way to theme
+  // a scrollbar's thinness/color, and - unlike the older ::-webkit-scrollbar*
+  // pseudo-elements - don't force Chromium into its "custom scrollbar"
+  // classic rendering mode, which is always visible regardless of
+  // overflow:overlay above. Using only these keeps the auto-hide behavior
+  // intact while still tinting the thumb to match the theme.
+  scrollbar-width: thin
+  scrollbar-color: rgba(v.$text, 0.25) transparent
+
+// globals.sass sets touch-action: none on every element, including all of
+// .wrapper's own children (the event rows, dots, names, ...) - touch-action
+// isn't inherited, and a touch gesture is only allowed through when it's
+// permissive on both the element actually under the finger *and* every
+// ancestor up to the scrolling container, so overriding it on .wrapper alone
+// left every descendant still blocking the gesture at its own touch point
+// (this class selector beats the global rule's bare "*" on specificity).
+.wrapper,
+.wrapper *
+  touch-action: pan-y
 
 // Today's events get their own callout cards, set apart from the future
 // timeline entirely - a tinted card (using the event's own color as the

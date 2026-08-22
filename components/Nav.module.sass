@@ -1,19 +1,19 @@
 @use "../app/variables" as v
 
-.clickArea
+// Thin dedicated swipe-catcher at the very bottom edge - deliberately not
+// tall enough to cover meaningful page content, so it can own pointer-events
+// directly (see Nav.tsx) without blocking clicks/taps on anything underneath.
+.edge
   position: fixed
   left: 0
   bottom: 0
   width: 100vw
-  height: 130px
+  height: 24px
   z-index: 10
-  // Without this, the browser can claim a vertical drag here as a page-scroll
-  // gesture instead of dispatching pointermove - which would cancel the
-  // pointer sequence partway through an upward swipe before it crosses
-  // SWIPE_THRESHOLD_PX in Nav.tsx.
   touch-action: none
+  user-select: none
 
-.overlayWrapper
+.pill
   position: fixed
   left: 50%
   bottom: 0
