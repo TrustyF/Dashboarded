@@ -50,17 +50,16 @@ function describeCountdown(dateStr: string, allDay: boolean | undefined) {
 
 function relevanceOpacity(days: number) {
   if (days <= 1) return "rgba(255,255,255,1)";
-  if (days <= 7) return "rgba(255,255,255,0.7)";
-  if (days <= 10) return "rgba(255,255,255,0.4)";
-  return "rgba(255,255,255,0.15)";
+  if (days <= 7) return "rgba(255,255,255,0.8)";
+  return "rgba(255,255,255,0.6)";
 }
 
 // Space between dots grows with the time gap to the next event, so a
 // cluster of same-day events reads as tight and a jump to next month reads
 // as a real jump. Square-root keeps the scale from blowing up over long gaps.
-const MIN_GAP_EM = 0.6;
-const MAX_GAP_EM = 4.5;
-const GAP_EM_PER_SQRT_DAY = 1.3;
+const MIN_GAP_EM = 0.5;
+const MAX_GAP_EM = 20;
+const GAP_EM_PER_SQRT_DAY = 2;
 
 function gapEmForDayDelta(deltaDays: number) {
   const em = Math.sqrt(Math.max(deltaDays, 0)) * GAP_EM_PER_SQRT_DAY;

@@ -44,11 +44,21 @@ export default function HomePage() {
     return (
         <div className={styles.wrapper}>
             <div className={styles.statGrid}>
+
                 <StatCardShell className={styles.clockCard}>
                     <Clock size={1.3}/>
                 </StatCardShell>
 
+                <StatCardShell label="Today" className={styles.weatherCard}>
+                    <WeatherSummary
+                        size={0.6}
+                        temperature={todayHigh != null ? Math.round(todayHigh) : 0}
+                        weatherCode={todayCode}
+                    />
+                </StatCardShell>
+
                 <StatCard
+
                     className={styles.stepsCard}
                     label="Steps"
                     value={goalProgressPercent(fitbit?.steps, STEPS_GOAL)}
@@ -60,14 +70,6 @@ export default function HomePage() {
                     goodDirection="up"
                     visual={fitbit?.steps && <StepRings days={fitbit.steps} color="#f2cc8f"/>}
                 />
-
-                <StatCardShell label="Today" className={styles.weatherCard}>
-                    <WeatherSummary
-                        size={0.85}
-                        temperature={todayHigh != null ? Math.round(todayHigh) : 0}
-                        weatherCode={todayCode}
-                    />
-                </StatCardShell>
             </div>
 
             <div className={styles.footer}>

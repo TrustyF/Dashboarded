@@ -10,6 +10,13 @@
   align-items: flex-start
   gap: 0.3em
   min-height: 0
+  // Nothing here previously clipped an oversized child (e.g. an ECharts
+  // canvas that measured its container before the kiosk's flex layout had
+  // settled to final size, then never got a further resize to correct
+  // it - see Sparkline.tsx). overflow:hidden guarantees any such mismatch
+  // stays visually contained within the card's rounded box instead of
+  // spilling past its edge.
+  overflow: hidden
 
 .topRow
   display: flex

@@ -18,6 +18,11 @@ sensor_poller/.venv
 .idea
 .vscode
 
+# IDE "compile Sass to CSS" file-watcher output - Next.js compiles
+# *.module.sass itself and never reads these, they're just editor byproducts
+*.module.css
+*.module.css.map
+
 # Misc
 *.log
 dashboard_next_migration.zip
