@@ -20,10 +20,15 @@
 
 // Time card: stretch the clock into the row beneath the label so its digits
 // scale to fill the tile's full height instead of sitting at their intrinsic
-// content size.
+// content size. min-width:0 lets it shrink with the row (like .stepsCard)
+// instead of refusing to go below the digits' own min-content width, which
+// is what was pushing it past the card's edge.
 .clockCard
-  flex: 1 1 0%
+  //flex: 1 1 0%
   //min-width: 0
+
+  > div:last-child
+    flex: 1
 
 // Steps has grow priority (flex:1, basis 0%) and claims whatever width
 // .weatherCard doesn't need, same "one side grows, one side shrinks" split
