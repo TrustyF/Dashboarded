@@ -1,6 +1,9 @@
 "use client";
 
-import { useSpotifyNowPlaying } from "@/lib/useSpotifyNowPlaying";
+import { useSpotifyNowPlaying } from "@/lib/hooks";
+import ProgressBar from "./ProgressBar";
+import { useDeferredImageUrl } from "./useDeferredImageUrl";
+import { useCrossfadeLayers } from "./useCrossfadeLayers";
 import styles from "./page.module.sass";
 
 // Visual port of SpotifyView.vue. The original used the Spotify Web Playback
@@ -9,6 +12,12 @@ import styles from "./page.module.sass";
 // this is a straight port, not a stub. Note `get_time()` in the original
 // showed the track's total duration, not time remaining - kept as-is here.
 
+// Flip to true locally to see the poll-schedule tick marks on the progress
+// bar (see lib/hooks.ts's useSpotifyNowPlaying notches) - a debugging aid,
+// not something the deployed kiosk should ever show, so it's a manual
+// switch rather than tied to NODE_ENV.
+const SHOW_POLL_NOTCHES = true;
+
 function formatDuration(ms: number) {
   const minutes = Math.floor(ms / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
@@ -16,23 +25,32 @@ function formatDuration(ms: number) {
 }
 
 export default function SpotifyPage() {
-  const { track, progressMs } = useSpotifyNowPlaying();
+  const { track, progressMs, error, notches } = useSpotifyNowPlaying();
 
-  const artUrl = track?.album.images[1]?.url ?? track?.album.images[0]?.url;
-  const progress = track ? Math.round((progressMs / track.duration_ms) * 100) : 0;
+  const rawArtUrl = track?.album.images[1]?.url ?? track?.album.images[0]?.url;
+  // Only fires the crossfade once the new art has actually finished loading
+  // (useDeferredImageUrl), then keeps the previous one visible underneath
+  // while it fades in instead of swapping straight to it (useCrossfadeLayers).
+  const loadedArtUrl = useDeferredImageUrl(rawArtUrl);
+  const artLayers = useCrossfadeLayers(loadedArtUrl);
 
   return (
     <div className={styles.wrapper}>
       <div className={styles.background}>
-        {artUrl && (
-          <div className={styles.bgImg} key={`${track!.id}+bg`} style={{ backgroundImage: `url(${artUrl})` }} />
-        )}
+        {artLayers.map((layer, i) => (
+          <div key={layer.key} className={styles.bgImg} style={{ backgroundImage: `url(${layer.url})`, zIndex: i }} />
+        ))}
+        <div className={styles.backgroundScrim} />
       </div>
 
       <div className={styles.playerCont}>
         {track ? (
           <div className={styles.track}>
-            <div className={styles.poster}>{artUrl && <img key={`${track.id}+poster`} src={artUrl} alt="" />}</div>
+            <div className={styles.poster}>
+              {artLayers.map((layer, i) => (
+                <img key={layer.key} src={layer.url} alt="" style={{ zIndex: i }} />
+              ))}
+            </div>
 
             <div className={styles.header}>
               <div className={styles.title}>
@@ -45,13 +63,17 @@ export default function SpotifyPage() {
                   <h1>{formatDuration(track.duration_ms)}</h1>
                 </div>
 
-                <div className={styles.progBar}>
-                  <div className={styles.bgProg} />
-                  <div className={styles.fgProg} style={{ width: `${progress}%` }} />
-                </div>
+                <ProgressBar
+                  progressMs={progressMs}
+                  durationMs={track.duration_ms}
+                  trackId={track.id}
+                  notches={SHOW_POLL_NOTCHES ? notches : []}
+                />
               </div>
             </div>
           </div>
+        ) : error ? (
+          <p className={styles.error}>{error}</p>
         ) : (
           <p className={styles.idle}>Nothing playing</p>
         )}
