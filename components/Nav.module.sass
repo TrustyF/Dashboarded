@@ -7,6 +7,11 @@
   width: 100vw
   height: 130px
   z-index: 10
+  // Without this, the browser can claim a vertical drag here as a page-scroll
+  // gesture instead of dispatching pointermove - which would cancel the
+  // pointer sequence partway through an upward swipe before it crosses
+  // SWIPE_THRESHOLD_PX in Nav.tsx.
+  touch-action: none
 
 .overlayWrapper
   position: fixed
@@ -23,7 +28,7 @@
   &[data-hidden="true"]
     opacity: 0
     visibility: hidden
-    transform: translate(-50%, -10px)
+    transform: translate(-50%, 10px)
 
 .wrapper
   display: flex

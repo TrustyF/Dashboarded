@@ -16,7 +16,7 @@ import styles from "./page.module.sass";
 // bar (see lib/hooks.ts's useSpotifyNowPlaying notches) - a debugging aid,
 // not something the deployed kiosk should ever show, so it's a manual
 // switch rather than tied to NODE_ENV.
-const SHOW_POLL_NOTCHES = true;
+const SHOW_POLL_NOTCHES = false;
 
 function formatDuration(ms: number) {
   const minutes = Math.floor(ms / 60000);

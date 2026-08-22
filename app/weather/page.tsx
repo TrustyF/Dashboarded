@@ -5,6 +5,7 @@ import { useSensorHistory, useWeather } from "@/lib/hooks";
 import { netChange, uvCategory, uvIcon } from "@/lib/weather-metrics";
 import { CODE_MAP } from "@/components/weather/WeatherSummary";
 import StatCard from "@/components/stats/StatCard";
+import { STAT_COLORS } from "@/lib/stat-colors";
 import styles from "./page.module.sass";
 
 // ECharts is a ~650KB chunk - deferring it keeps the shell interactive (and
@@ -50,7 +51,7 @@ export default function WeatherPage() {
           value={Math.round(current.temperature_2m)}
           unit="°"
           diff={netChange(nextTwoHours(hourly.temperature_2m))}
-          color="#5b9bd5"
+          color={STAT_COLORS.temperature}
           sparkline={nextTwoHours(hourly.temperature_2m)}
           goodDirection="neutral"
           icon={conditionIconSrc}
@@ -63,7 +64,7 @@ export default function WeatherPage() {
           unit={uvCategory(uvIndex) ?? ""}
           diffUnit=""
           diff={netChange(nextTwoHours(hourly.uv_index))}
-          color="#f2c94c"
+          color={STAT_COLORS.uvIndex}
           sparkline={nextTwoHours(hourly.uv_index)}
           goodDirection="neutral"
           icon={uvIcon(uvIndex)}
@@ -74,7 +75,7 @@ export default function WeatherPage() {
           value={current.precipitation}
           unit="mm"
           diff={netChange(nextTwoHours(hourly.precipitation))}
-          color="#3fb8af"
+          color={STAT_COLORS.precipitation}
           sparkline={nextTwoHours(hourly.precipitation)}
           goodDirection="neutral"
         />
@@ -83,7 +84,7 @@ export default function WeatherPage() {
           value={sensor?.temp?.at(-1) ?? null}
           unit="°"
           diff={netChange(sensor?.temp)}
-          color="#c38869"
+          color={STAT_COLORS.indoor}
           sparkline={sensor?.temp ?? []}
           goodDirection="neutral"
         />

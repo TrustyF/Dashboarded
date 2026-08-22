@@ -9,7 +9,7 @@ type Props = {
 };
 
 const SIZE = 34;
-const STROKE = 4;
+const STROKE = 6;
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 

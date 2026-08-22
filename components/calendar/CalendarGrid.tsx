@@ -6,6 +6,15 @@ import { EVENT_COLORS } from "@/lib/calendar-colors";
 import { hexToRgba } from "@/lib/color";
 import styles from "./CalendarGrid.module.sass";
 
+type TooltipState = {
+  date: Date;
+  // Position relative to .gridArea (the nearest positioned ancestor), so it
+  // stays anchored to the clicked cell regardless of scroll/layout - not
+  // relative to the viewport, which the resize-driven cell size would fight.
+  top: number;
+  left: number;
+};
+
 // Port of CalendarGrid.vue - shows the current month, colors days that have
 // an event, and outlines today.
 
@@ -86,18 +95,63 @@ function useCellSize(rows: number) {
   return { ref, cell };
 }
 
+function eventColorHex(event: CalendarEvent) {
+  return EVENT_COLORS[String(event.colorId)] ?? event.calendarColor;
+}
+
 export default function CalendarGrid({ events }: { events: CalendarEvent[] }) {
   const today = new Date();
   const daysGrid = buildDaysGrid(today);
   const rows = daysGrid.length / 7;
   const { ref, cell } = useCellSize(rows);
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  function eventsForDay(date: Date) {
+    return events.filter((e) => sameDay(new Date(e.date), date));
+  }
 
   function eventColorFor(date: Date) {
     const match = events.find((e) => sameDay(new Date(e.date), date));
     if (!match) return "transparent";
-    const hex = EVENT_COLORS[String(match.colorId)] ?? match.calendarColor;
+    const hex = eventColorHex(match);
     return hex ? hexToRgba(hex, 0.5) : NO_COLOR;
   }
+
+  function handleDayClick(e: React.MouseEvent<HTMLDivElement>, date: Date) {
+    if (tooltip && sameDay(tooltip.date, date)) {
+      setTooltip(null);
+      return;
+    }
+    if (eventsForDay(date).length === 0) {
+      setTooltip(null);
+      return;
+    }
+
+    const cellRect = e.currentTarget.getBoundingClientRect();
+    const containerRect = ref.current!.getBoundingClientRect();
+    setTooltip({
+      date,
+      top: cellRect.bottom - containerRect.top + 4,
+      left: cellRect.left - containerRect.left,
+    });
+  }
+
+  // Closes the tooltip on a tap/click anywhere outside it - mousedown (not
+  // click) so it fires before a click on a different day cell, letting that
+  // cell's own onClick still open its tooltip in the same tick rather than
+  // this listener closing what the cell click just opened.
+  useEffect(() => {
+    if (!tooltip) return;
+
+    function handlePointerDown(e: MouseEvent) {
+      if (tooltipRef.current?.contains(e.target as Node)) return;
+      setTooltip(null);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [tooltip]);
 
   return (
     <div className={styles.wrapper}>
@@ -117,10 +171,38 @@ export default function CalendarGrid({ events }: { events: CalendarEvent[] }) {
                   .filter(Boolean)
                   .join(" ")}
                 style={{ width: cell, height: cell, background: eventColorFor(date) }}
+                onClick={(e) => handleDayClick(e, date)}
               >
                 {date.getDate()}
               </div>
             ))}
+          </div>
+        )}
+
+        {tooltip && (
+          <div
+            ref={tooltipRef}
+            className={styles.tooltip}
+            style={{ top: tooltip.top, left: tooltip.left }}
+          >
+            <div className={styles.tooltipDate}>
+              {tooltip.date.toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric" })}
+            </div>
+            {eventsForDay(tooltip.date).length === 0 && <div className={styles.tooltipEvent}>No events</div>}
+            {eventsForDay(tooltip.date).map((event) => {
+              const color = eventColorHex(event) ?? NO_COLOR;
+              return (
+                <div key={event.id} className={styles.tooltipEvent}>
+                  <span className={styles.tooltipDot} style={{ background: color }} />
+                  <span className={styles.tooltipName}>{event.name}</span>
+                  <span className={styles.tooltipTime}>
+                    {event.allDay
+                      ? "All day"
+                      : new Date(event.date).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

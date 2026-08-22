@@ -19,7 +19,7 @@
  */
 
 import { createServer } from "node:http";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, chmod } from "node:fs/promises";
 import { dirname } from "node:path";
 import { exec } from "node:child_process";
 import { createInterface } from "node:readline/promises";
@@ -275,6 +275,14 @@ async function bootstrapSpotify() {
     refresh_token: json.refresh_token,
     expires_at: Date.now() / 1000 + json.expires_in,
   });
+
+  // Unlike the other tokens here, this file gets rewritten in place by the
+  // running container on every access-token refresh (lib/spotify.ts). It
+  // lands on the Pi via `docker compose cp`, which always writes as root -
+  // leaving it at the default 0644 blocks the app's non-root `nextjs` user
+  // from writing back the refreshed token. World-writable sidesteps needing
+  // to know the container's UID/GID at copy time.
+  await chmod(cachePath, 0o666);
 }
 
 const SERVICES = {

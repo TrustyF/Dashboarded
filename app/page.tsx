@@ -11,6 +11,7 @@ import CalendarGrid from "@/components/calendar/CalendarGrid";
 import StatCard from "@/components/stats/StatCard";
 import StatCardShell from "@/components/stats/StatCardShell";
 import StepRings, {STEPS_GOAL} from "@/components/stats/StepRings";
+import {STAT_COLORS} from "@/lib/stat-colors";
 import styles from "./page.module.sass";
 
 // Home screen, restyled onto the same stat-tile/shell layout as
@@ -65,10 +66,10 @@ export default function HomePage() {
                     valueSize={1.5}
                     unit="%"
                     diff={null}
-                    color="#f2cc8f"
+                    color={STAT_COLORS.steps}
                     sparkline={fitbit?.steps?.map((p: { value: number | null }) => p.value) ?? []}
                     goodDirection="up"
-                    visual={fitbit?.steps && <StepRings days={fitbit.steps} color="#f2cc8f"/>}
+                    visual={fitbit?.steps && <StepRings days={fitbit.steps} color={STAT_COLORS.stepsRing}/>}
                 />
             </div>
 
@@ -80,7 +81,7 @@ export default function HomePage() {
                         valueSize={1.5}
                         unit="°"
                         diff={netChange(nextTwoHours(hourly?.temperature_2m))}
-                        color="#5b9bd5"
+                        color={STAT_COLORS.temperature}
                         sparkline={nextTwoHours(hourly?.temperature_2m)}
                         goodDirection="neutral"
                     />
@@ -92,7 +93,7 @@ export default function HomePage() {
 
                         unit="°"
                         diff={netChange(sensor?.temp)}
-                        color="#c38869"
+                        color={STAT_COLORS.indoor}
                         sparkline={sensor?.temp ?? []}
                         goodDirection="neutral"
                     />
@@ -100,11 +101,10 @@ export default function HomePage() {
                         label="UV Index"
                         value={uvIndex}
                         valueSize={1.5}
-
                         unit={uvCategory(uvIndex) ?? ""}
                         diffUnit=""
                         diff={netChange(nextTwoHours(hourly?.uv_index))}
-                        color="#f2c94c"
+                        color={STAT_COLORS.uvIndex}
                         sparkline={nextTwoHours(hourly?.uv_index)}
                         goodDirection="neutral"
                         icon={uvIcon(uvIndex)}
@@ -117,7 +117,7 @@ export default function HomePage() {
                         valueSize={1.5}
                         unit="mm"
                         diff={netChange(nextTwoHours(hourly?.precipitation))}
-                        color="#3fb8af"
+                        color={STAT_COLORS.precipitation}
                         sparkline={nextTwoHours(hourly?.precipitation)}
                         goodDirection="neutral"
                     />

@@ -7,6 +7,7 @@ import { avgDiff, goalProgressPercent, lastValue } from "@/lib/fitbit-metrics";
 import StatCard from "@/components/stats/StatCard";
 import StepRings, { STEPS_GOAL } from "@/components/stats/StepRings";
 import RangeSelector from "@/components/health/RangeSelector";
+import { STAT_COLORS } from "@/lib/stat-colors";
 import styles from "./page.module.sass";
 
 // ECharts is a ~650KB chunk - loading it eagerly blocks hydration (and so
@@ -44,7 +45,7 @@ export default function HealthPage() {
               value={lastValue(data.weight)}
               unit="kg"
               diff={avgDiff(data.weight)}
-              color="#81b29a"
+              color={STAT_COLORS.weight}
               sparkline={data.weight.map((p: { value: number | null }) => p.value)}
             />
             <StatCard
@@ -52,7 +53,7 @@ export default function HealthPage() {
               value={lastValue(data.fat)}
               unit="%"
               diff={avgDiff(data.fat)}
-              color="#e07a5f"
+              color={STAT_COLORS.bodyFat}
               sparkline={data.fat.map((p: { value: number | null }) => p.value)}
             />
             <StatCard
@@ -61,10 +62,10 @@ export default function HealthPage() {
               unit="%"
               diff={avgDiff(data.steps)}
               diffUnit=""
-              color="#f2cc8f"
+              color={STAT_COLORS.steps}
               sparkline={data.steps.map((p: { value: number | null }) => p.value)}
               goodDirection="up"
-              visual={<StepRings days={data.steps} color="#f2cc8f" />}
+              visual={<StepRings days={data.steps} color={STAT_COLORS.steps} />}
             />
           </div>
 
