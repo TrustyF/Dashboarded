@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LINKS } from "@/lib/nav-links";
-import { useViewTransitionNavigate } from "@/lib/view-transition-nav";
+import { useNavigate } from "@/lib/navigate";
 import styles from "./Nav.module.sass";
 
 // Port of NavOverlay.vue: a floating icon pill, hidden by default (kiosk-style,
@@ -37,7 +37,7 @@ const SWIPE_X_THRESHOLD_PX = 80;
 
 export default function Nav() {
   const pathname = usePathname();
-  const navigate = useViewTransitionNavigate();
+  const navigate = useNavigate();
   const [hidden, setHidden] = useState(true);
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pillRef = useRef<HTMLDivElement>(null);
@@ -147,8 +147,8 @@ export default function Nav() {
                 onClick={(e) => {
                   // Keep <Link> for its built-in prefetching (still mounted,
                   // still watching viewport intersection) but take over the
-                  // actual navigation so it goes through the same
-                  // view-transition-wrapped path as the swipe gesture below.
+                  // actual navigation so it goes through the same path as
+                  // the swipe gesture below.
                   e.preventDefault();
                   navigate(link.href);
                 }}

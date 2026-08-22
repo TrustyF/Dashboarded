@@ -32,6 +32,7 @@
   grid-template-columns: repeat(7, auto)
 
 .day
+  position: relative
   display: flex
   align-items: center
   justify-content: center
@@ -40,6 +41,8 @@
   background: v.$surface
   border-radius: 0.4em
   cursor: pointer
+  overflow: hidden
+  //box-shadow: 0.1em 0.1em 0.1em rgba(0, 0, 0, 0.5)
 
   &.next
     background: v.$surface-alt
@@ -52,6 +55,19 @@
   &.past
     color: v.$surface
     background: v.$bg !important
+
+// Corner wedge marking a recurring event on this day, layered over the
+// cell's own background rather than replacing it (unlike a one-off event's
+// full-block color) so a recurring event stays visually distinct even when
+// it lands on the same day as a regular one.
+.notch
+  position: absolute
+  bottom: 0
+  right: 0
+  width: 0.9em
+  height: 0.9em
+  clip-path: polygon(100% 0, 100% 100%, 0 100%)
+  pointer-events: none
 
 // Positioning (fixed placement, viewport clamping, escaping this card's own
 // overflow:hidden) is handled by the Popover shell this renders inside of -

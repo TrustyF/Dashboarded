@@ -1,13 +1,18 @@
 "use client";
 
-import { useSensorHistory, useVitals } from "@/lib/hooks";
+import { useSensorHistory, useVitals, useVitalsHistory } from "@/lib/hooks";
+import { netChange } from "@/lib/weather-metrics";
+import StatCard from "@/components/stats/StatCard";
+import { STAT_COLORS } from "@/lib/stat-colors";
 import styles from "./page.module.sass";
 
-// New page - device vitals (temp/voltage/CPU%/RAM%, matching the original's
-// never-wired-up vitals_container.vue) plus system/network status the
-// original didn't have: uptime, IP, disk usage, and sensor_poller's last
-// heartbeat (derived from the sensor history's most recent timestamp - if
-// that goes stale, it usually means poll.py has stopped writing).
+// Same Google Fit/Health Connect style overview as app/weather/page.tsx and
+// app/health/page.tsx: quick-glance stat tiles, each with its own sparkline
+// trend - was a bespoke chart-per-card layout, brought back in line with
+// that shared pattern. Built after diagnosing a flaky PSU by hand (Aug 22)
+// via repeated `vcgencmd`/`dmesg` polling over SSH - the under-voltage tile
+// is what would have caught it on-screen instead. (Clock/under-voltage are
+// read from sysfs, not vcgencmd - see lib/vitals-sampler.ts for why.)
 
 const STALE_AFTER_MS = 30_000;
 
@@ -22,37 +27,70 @@ function formatAgo(ms: number): string {
 
 export default function SystemPage() {
   const { data: vitals } = useVitals();
+  const { data: history, isLoading } = useVitalsHistory();
   const { data: sensorHistory } = useSensorHistory();
 
   const lastReadingTime = sensorHistory?.time?.at(-1);
   const heartbeatAgeMs = lastReadingTime ? Date.now() - new Date(lastReadingTime).getTime() : null;
   const heartbeatStale = heartbeatAgeMs != null && heartbeatAgeMs > STALE_AFTER_MS;
 
+  const underVoltageCount = history?.underVoltageNow?.filter(Boolean).length ?? 0;
+
   return (
     <div className={styles.wrapper}>
-      <div className={styles.vitals}>
-        <div className={styles.tile}>
-          <div className={styles.tileValue}>{vitals?.temp ?? "—"}</div>
-          <i className={`bi bi-thermometer ${styles.tileIcon}`} />
+      {isLoading || !history?.time?.length ? (
+        <p>Waiting for readings…</p>
+      ) : (
+        <div className={styles.statGrid}>
+          <StatCard
+            label="Temp"
+            value={history.tempC.at(-1) ?? null}
+            unit="°"
+            diff={netChange(history.tempC)}
+            color={STAT_COLORS.deviceTemp}
+            sparkline={history.tempC}
+            goodDirection="down"
+          />
+          <StatCard
+            label="Clock"
+            value={history.armClockMhz.at(-1) ?? null}
+            unit="MHz"
+            diff={netChange(history.armClockMhz)}
+            color={STAT_COLORS.clock}
+            sparkline={history.armClockMhz}
+            goodDirection="neutral"
+          />
+          <StatCard
+            label="CPU"
+            value={history.cpuPercent.at(-1) ?? null}
+            unit="%"
+            diff={netChange(history.cpuPercent)}
+            color={STAT_COLORS.cpu}
+            sparkline={history.cpuPercent}
+            goodDirection="neutral"
+          />
+          <StatCard
+            label="RAM"
+            value={history.ramPercent.at(-1) ?? null}
+            unit="%"
+            diff={netChange(history.ramPercent)}
+            color={STAT_COLORS.ram}
+            sparkline={history.ramPercent}
+            goodDirection="neutral"
+          />
+          <StatCard
+            label="Under-voltage"
+            value={underVoltageCount}
+            unit=""
+            diff={null}
+            color={STAT_COLORS.undervoltage}
+            sparkline={history.underVoltageNow.map((v: boolean) => (v ? 1 : 0))}
+            sparklineMin={0}
+            sparklineMax={1}
+            goodDirection="down"
+          />
         </div>
-
-        <div className={styles.tile}>
-          <div className={styles.tileValue}>{vitals?.power ?? "—"}</div>
-          <i className={`bi bi-lightning-charge-fill ${styles.tileIcon}`} />
-        </div>
-
-        <div className={styles.tile}>
-          <div className={styles.tileValue}>{vitals?.cpu ?? "—"}</div>
-          <div className={styles.tileDecorator}>%</div>
-          <i className={`bi bi-cpu ${styles.tileIcon}`} />
-        </div>
-
-        <div className={styles.tile}>
-          <div className={styles.tileValue}>{vitals?.ram ?? "—"}</div>
-          <div className={styles.tileDecorator}>%</div>
-          <i className={`bi bi-nvme ${styles.tileIcon}`} style={{ transform: "rotate(90deg)" }} />
-        </div>
-      </div>
+      )}
 
       <div className={styles.stats}>
         <div className={styles.stat}>

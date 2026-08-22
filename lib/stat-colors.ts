@@ -19,6 +19,11 @@ const STAT_HUES = {
   uvIndex: 45, // was #f2c94c
   precipitation: 176, // was #3fb8af
   indoor: 21, // was #c38869
+  deviceTemp: 350,
+  clock: 195,
+  cpu: 30,
+  ram: 100,
+  undervoltage: 345,
 } as const;
 
 export const STAT_COLORS: Record<keyof typeof STAT_HUES, string> = Object.fromEntries(

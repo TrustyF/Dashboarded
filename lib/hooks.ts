@@ -34,6 +34,12 @@ export function useVitals() {
   return useSWR("/api/vitals", fetcher, { refreshInterval: 10_000 });
 }
 
+// Matches lib/vitals-history.ts's own sample cadence - no point polling
+// faster than the server-side ring buffer actually gains new points.
+export function useVitalsHistory() {
+  return useSWR("/api/vitals/history", fetcher, { refreshInterval: 10_000 });
+}
+
 export function useBrightness() {
   return useSWR("/api/settings/toggle-brightness?toggle=state", fetcher);
 }

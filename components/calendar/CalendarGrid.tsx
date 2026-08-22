@@ -103,10 +103,17 @@ export default function CalendarGrid({ events }: { events: CalendarEvent[] }) {
   }
 
   function eventColorFor(date: Date) {
-    const match = events.find((e) => sameDay(new Date(e.date), date));
+    const match = events.find((e) => sameDay(new Date(e.date), date) && !e.recurring);
     if (!match) return "transparent";
     const hex = eventColorHex(match);
     return hex ? hexToRgba(hex, 0.5) : NO_COLOR;
+  }
+
+  function recurringColorFor(date: Date) {
+    const match = events.find((e) => sameDay(new Date(e.date), date) && e.recurring);
+    if (!match) return null;
+    const hex = eventColorHex(match);
+    return hex ? hexToRgba(hex, 0.9) : NO_COLOR;
   }
 
   function handleDayClick(e: React.MouseEvent<HTMLDivElement>, date: Date) {
@@ -128,23 +135,27 @@ export default function CalendarGrid({ events }: { events: CalendarEvent[] }) {
       <div className={styles.gridArea} ref={ref}>
         {cell > 0 && (
           <div className={styles.grid} style={{ gap: GAP }}>
-            {daysGrid.map(({ date, isNextMonth }) => (
-              <div
-                key={date.toISOString()}
-                className={[
-                  styles.day,
-                  isNextMonth && styles.next,
-                  sameDay(date, today) && styles.today,
-                  isPast(date, today) && styles.past,
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                style={{ width: cell, height: cell, background: eventColorFor(date) }}
-                onClick={(e) => handleDayClick(e, date)}
-              >
-                {date.getDate()}
-              </div>
-            ))}
+            {daysGrid.map(({ date, isNextMonth }) => {
+              const recurringColor = recurringColorFor(date);
+              return (
+                <div
+                  key={date.toISOString()}
+                  className={[
+                    styles.day,
+                    isNextMonth && styles.next,
+                    sameDay(date, today) && styles.today,
+                    isPast(date, today) && styles.past,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  style={{ width: cell, height: cell, background: eventColorFor(date) }}
+                  onClick={(e) => handleDayClick(e, date)}
+                >
+                  {date.getDate()}
+                  {recurringColor && <span className={styles.notch} style={{ background: recurringColor }} />}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
