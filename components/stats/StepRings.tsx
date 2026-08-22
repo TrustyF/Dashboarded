@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import styles from "./StepRings.module.sass";
 
 export const STEPS_GOAL = 10_000;
@@ -37,7 +38,13 @@ export default function StepRings({ days, color, goal = STEPS_GOAL }: Props) {
                 strokeWidth={STROKE}
                 strokeLinecap="round"
                 strokeDasharray={CIRCUMFERENCE}
-                strokeDashoffset={CIRCUMFERENCE * (1 - pct)}
+                className={styles.progress}
+                style={
+                  {
+                    "--start-offset": CIRCUMFERENCE,
+                    "--target-offset": CIRCUMFERENCE * (1 - pct),
+                  } as CSSProperties
+                }
                 transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
               />
             </svg>

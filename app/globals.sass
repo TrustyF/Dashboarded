@@ -96,12 +96,12 @@ main
 
 :root[data-nav-direction="forward"]
   &::view-transition-old(page-content)
-    animation: slide-out-left 250ms ease-out forwards
+    animation: slide-out-left #{v.$nav-transition-ms}ms ease-out forwards
   &::view-transition-new(page-content)
-    animation: slide-in-from-right 250ms ease-out forwards
+    animation: slide-in-from-right #{v.$nav-transition-ms}ms ease-out forwards
 
 :root[data-nav-direction="backward"]
   &::view-transition-old(page-content)
-    animation: slide-out-right 250ms ease-out forwards
+    animation: slide-out-right #{v.$nav-transition-ms}ms ease-out forwards
   &::view-transition-new(page-content)
-    animation: slide-in-from-left 250ms ease-out forwards
+    animation: slide-in-from-left #{v.$nav-transition-ms}ms ease-out forwards

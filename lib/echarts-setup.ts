@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import * as echarts from "echarts/core";
 import { BarChart, LineChart } from "echarts/charts";
 import {
@@ -85,11 +88,62 @@ export const NO_INTERACTION = {
   axisPointer: { show: false },
 };
 
+// Spread into every animated chart's `option` (Sparkline.tsx,
+// DailyTempChart.tsx, WeightChart.tsx, SensorHistoryChart.tsx) -
+// "quadraticOut" is ECharts' own name for a decelerate-into-rest curve, the
+// same shape CSS calls "ease-out".
+export const EASE_OUT_ANIMATION = {
+  animationEasing: "cubicOut",
+};
+
 // Marks every series in the array silent - stops hover/click state and
 // cursor changes on the shapes themselves, on top of NO_INTERACTION's
 // tooltip/axisPointer suppression above.
 export function withNoInteraction<T extends Record<string, unknown>>(series: T[]): T[] {
   return series.map((s) => ({ ...s, silent: true }));
+}
+
+// Stamps EASE_OUT_ANIMATION onto every series directly. Traced through
+// ECharts' own source (node_modules/echarts/dist/echarts.esm.js -
+// getAnimationConfig, called from animateOrSetProps/initProps): the entrance
+// animation's easing is read via `seriesModel.getShallow('animationEasing')`
+// - i.e. off the *series* model specifically. Spreading EASE_OUT_ANIMATION
+// only at the root option's top level relies on ECharts' own root-to-series
+// option cascade actually populating that per-series read, which in
+// practice wasn't producing any visible difference even with a drastically
+// different curve (elasticOut) - setting it directly on each series is what
+// getShallow is unambiguously guaranteed to see.
+export function withEaseOutAnimation<T extends Record<string, unknown>>(series: T[]): T[] {
+  return series.map((s) => ({ ...s, ...EASE_OUT_ANIMATION }));
+}
+
+// True once the browser has had a full extra frame after mount to settle
+// layout. echarts-for-react measures its container's size once, at its own
+// mount time (see node_modules/echarts-for-react/lib/core.js's
+// initEchartsInstance) - if a flex-sized container (any .trendChart/
+// .trend-style wrapper in this app) hasn't resolved its final size yet at
+// that exact moment, the chart draws once at the wrong size, then a later
+// ResizeObserver-driven correction redraws it at the right one. With
+// animation on, that correction visibly replays the entrance animation from
+// scratch (see components/charts/DailyTempChart.tsx's history for the two
+// separate bugs this caused). Gating each chart's own mount behind this
+// hook - instead of measuring wrong and correcting after the fact, per
+// chart, with its own onChartReady hack - means echarts-for-react's mount-
+// time measurement only ever runs once layout has already settled, so
+// there's nothing to correct.
+//
+// Two rAFs, not one: the first lets whatever the *parent* just committed
+// actually paint (that's when flex/grid actually resolves final sizes),
+// the second is the frame the chart is finally allowed to mount on - one
+// rAF risks the chart's own mount landing in the same paint as its
+// container's, on a fast enough machine.
+export function useChartMountSettled(): boolean {
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setSettled(true)));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return settled;
 }
 
 export { echarts };

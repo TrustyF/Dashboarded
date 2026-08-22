@@ -13,3 +13,9 @@ $bad: #d60b3e         // negative diff/trend
 $surface: #282828     // raised tile over $card-bg (e.g. calendar day cells)
 $surface-alt: #1b2026 // adjacent/inactive variant of $surface
 $accent: #2e8ae6      // highlight/selection accent (e.g. "today" outline)
+
+// Matches globals.sass's page-slide animation duration - entrance
+// animations that play on mount (e.g. StepRings' ring fill) use this as
+// their own animation-delay so they don't run underneath/get cut short by
+// the page still sliding in.
+$nav-transition-ms: 250

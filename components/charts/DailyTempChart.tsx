@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ECharts } from "echarts/core";
 import ReactEChartsCore from "echarts-for-react/lib/core";
-import { echarts, NO_INTERACTION, THEME_NAME, withNoInteraction } from "@/lib/echarts-setup";
+import {
+  EASE_OUT_ANIMATION,
+  echarts,
+  NO_INTERACTION,
+  THEME_NAME,
+  useChartMountSettled,
+  withEaseOutAnimation,
+  withNoInteraction,
+} from "@/lib/echarts-setup";
 import { movingAverage } from "@/lib/moving-average";
 import { CODE_MAP } from "@/components/weather/WeatherSummary";
 
@@ -56,21 +63,6 @@ function rainAlpha(mm: number): number {
   return RAIN_MIN_ALPHA + t * (RAIN_MAX_ALPHA - RAIN_MIN_ALPHA);
 }
 
-// Same fix as Sparkline.tsx's handleReady, and same root cause: this chart's
-// container is flex-sized (.trendChart { flex: 1 }), so its final size isn't
-// settled yet at echarts-for-react's own mount-time measurement - it draws
-// once at a wrong/transient size, then the library's own ResizeObserver
-// corrects it once the flex layout actually settles. Sparkline's version of
-// this bug is invisible (it sets animation: false), but this chart's
-// entrance animation is on, so that later correction plays out as the line
-// visibly resetting and redrawing from scratch. Forcing the resize one frame
-// after mount - before the entrance animation has drawn anything worth
-// looking at - makes that correction happen before there's anything visible
-// to restart.
-function handleReady(instance: ECharts) {
-  requestAnimationFrame(() => instance.resize());
-}
-
 // Daily counterpart to the old HourlyTempChart - same reusable chart shape,
 // driven by per-day high/sunshine arrays (rain bands are the exception -
 // those come from the hourly precipitation series so each day's band can be
@@ -84,6 +76,8 @@ export default function DailyTempChart({
   hourlyTemps,
   weatherCodes,
 }: Props) {
+  const settled = useChartMountSettled();
+
   // Drives the "now" dot below - re-evaluated once a minute (aligned to the
   // minute boundary, same approach as components/clock/Clock.tsx) so the dot
   // creeps forward through today without needing fresh forecast data.
@@ -97,6 +91,13 @@ export default function DailyTempChart({
     tick();
     return () => clearTimeout(timeoutId);
   }, []);
+
+  // .trendChart (the parent) is flex-sized independently of this component's
+  // own content, so skipping this render entirely (rather than rendering a
+  // placeholder) until settled doesn't shift anything else on the page -
+  // also skips the (otherwise pointless) chart-data computation below for
+  // the couple of frames nothing would be drawn anyway.
+  if (!settled) return null;
 
   // Right margin has to fit each line's endLabel text (near the last data
   // point) and the extra axes' own tick labels, which sit further out.
@@ -326,17 +327,14 @@ export default function DailyTempChart({
       echarts={echarts}
       theme={THEME_NAME}
       style={{ height: "100%", width: "100%" }}
-      onChartReady={handleReady}
       option={{
         ...NO_INTERACTION,
-        // Same call as Sparkline.tsx's animation: false, same reason: the
-        // entrance draw-in has caused two separate glitches here (a
-        // container-resize race replaying it from scratch, and the endLabel/
-        // final segment visibly snapping into place right as it finishes) -
-        // both are ECharts' own animation-completion timing, not something
-        // fixable by scheduling when the chart starts rendering. Drawing the
-        // final state immediately removes both at the source.
-        animation: false,
+        ...EASE_OUT_ANIMATION,
+        // Entrance animation is on (unlike Sparkline.tsx's animation: false)
+        // - confirmed against a real build that useChartMountSettled (see
+        // lib/echarts-setup.ts) mounting this chart only once its flex
+        // container has settled is enough on its own: no more container-
+        // resize race replaying the draw-in from scratch.
         grid: { left: 50, right: gridRight, top: 16, bottom: 25 },
         xAxis: [
           {
@@ -377,7 +375,7 @@ export default function DailyTempChart({
           max: Math.max(...realTempPoints.map((p) => p[1])),
           inRange: { color: ["#5b9bd5", "#3fb8af", "#e8c15a", "#e0703f"] },
         },
-        series: withNoInteraction(series),
+        series: withEaseOutAnimation(withNoInteraction(series)),
       }}
     />
   );
