@@ -13,23 +13,18 @@
   // of scrolling) - overflow-y here is what turns that available, bounded
   // height into an actual scroll area rather than more clipping.
   overflow-y: auto
-  // "overlay" draws the scrollbar as a floating layer that doesn't reserve
-  // any layout width at all, unlike "auto" which always reserves its track
-  // width from the content box even at 6px, and - the actual point here -
-  // auto-hides after a moment of inactivity the way a native OS scrollbar
-  // does, only reappearing on hover/scroll. It's deprecated in newer
-  // Chromium and unsupported elsewhere, so it's declared *after* auto as a
-  // progressive enhancement - an engine that doesn't recognize the value
-  // ignores this line and keeps the always-visible auto behavior above.
-  overflow-y: overlay
-  // scrollbar-width/-color are the standardized (non-prefixed) way to theme
-  // a scrollbar's thinness/color, and - unlike the older ::-webkit-scrollbar*
-  // pseudo-elements - don't force Chromium into its "custom scrollbar"
-  // classic rendering mode, which is always visible regardless of
-  // overflow:overlay above. Using only these keeps the auto-hide behavior
-  // intact while still tinting the thumb to match the theme.
-  scrollbar-width: thin
-  scrollbar-color: rgba(v.$text, 0.25) transparent
+  // Scrolling still works via touch/wheel/keyboard - this only hides the
+  // scrollbar's own visible track+thumb chrome. scrollbar-width is the
+  // standardized way (Firefox, and Chromium 121+); -ms-overflow-style
+  // covers old Edge/IE. Neither has a WebKit/Chromium pseudo-element
+  // equivalent that doesn't also force "custom scrollbar" mode, so
+  // ::-webkit-scrollbar below (display:none, no thumb/track styling) is
+  // what actually hides it there.
+  scrollbar-width: none
+  -ms-overflow-style: none
+
+  &::-webkit-scrollbar
+    display: none
 
 // globals.sass sets touch-action: none on every element, including all of
 // .wrapper's own children (the event rows, dots, names, ...) - touch-action
