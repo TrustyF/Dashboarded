@@ -1,15 +1,8 @@
+// Visual number+unit styling lives in NumberUnit itself now - this only
+// carries the layout concerns specific to StatCard's own flex column.
 .value
-  font-size: calc(1.8rem * var(--size, 1))
-  font-weight: 600
-  display: flex
-  align-items: baseline
-  gap: 0.25em
+  flex: 1
   margin: 0.25rem 0
-
-.unit
-  font-size: 0.9rem
-  font-weight: 400
-  opacity: 0.6
 
 // Pushed to the bottom of the card's flex column via margin-top:auto instead
 // of stacking right below the diff pill - keeps the trend visual pinned to

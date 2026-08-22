@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import DiffPill from "@/components/stats/DiffPill";
 import StatCardShell from "@/components/stats/StatCardShell";
+import NumberUnit from "@/components/common/NumberUnit";
 import styles from "./StatCard.module.sass";
 
 // See app/health/page.tsx's WeightChart import for why this is deferred.
@@ -62,10 +63,14 @@ export default function StatCard({
 }: Props) {
   return (
     <StatCardShell label={label} icon={icon} iconAlt={iconAlt} iconLabel={iconLabel} emoji={emoji} className={className}>
-      <div className={styles.value} style={{ "--size": valueSize } as React.CSSProperties}>
-        {value != null ? value : "—"}
-        <span className={styles.unit}>{unit}</span>
-      </div>
+      <NumberUnit
+        value={value != null ? value : "—"}
+        unit={unit}
+        size={valueSize}
+        unitRatio={0.5}
+        muted
+        className={styles.value}
+      />
       <DiffPill value={diff} unit={diffUnit ?? unit} goodDirection={goodDirection} />
       <div className={styles.trend}>
         {visual ?? <Sparkline data={sparkline} color={color} min={sparklineMin} max={sparklineMax} />}

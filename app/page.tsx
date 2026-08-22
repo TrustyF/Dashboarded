@@ -46,7 +46,7 @@ export default function HomePage() {
             <div className={styles.statGrid}>
 
                 <StatCardShell className={styles.clockCard}>
-                    <Clock size={1.3}/>
+                    <Clock size={1.1}/>
                 </StatCardShell>
 
                 <StatCardShell label="Today" className={styles.weatherCard}>

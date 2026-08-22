@@ -1,4 +1,4 @@
-import styles from "./TemperatureSingleton.module.sass";
+import NumberUnit from "@/components/common/NumberUnit";
 
 // Port of temperature_singleton.vue.
 
@@ -9,10 +9,5 @@ export default function TemperatureSingleton({
   temperature: number;
   size?: number;
 }) {
-  return (
-    <div className={styles.wrapper} style={{ "--size": size } as React.CSSProperties}>
-      <h1>{temperature}</h1>
-      <h1 className={styles.decorator}>°</h1>
-    </div>
-  );
+  return <NumberUnit value={temperature} unit="°" size={size} baseSize="5em" />;
 }
