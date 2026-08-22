@@ -31,6 +31,9 @@ type Props = {
   // visual don't need a separate prop shape.
   visual?: React.ReactNode;
   className?: string;
+  // Scales the headline number relative to the 1.8rem default (e.g. 1.3 =
+  // 30% bigger) - same --size-variable convention as Clock/WeatherSummary.
+  valueSize?: number;
 };
 
 // Google Fit/Health Connect style tile: label, headline number, a diff pill,
@@ -55,10 +58,11 @@ export default function StatCard({
   emoji,
   visual,
   className,
+  valueSize = 1,
 }: Props) {
   return (
     <StatCardShell label={label} icon={icon} iconAlt={iconAlt} iconLabel={iconLabel} emoji={emoji} className={className}>
-      <div className={styles.value}>
+      <div className={styles.value} style={{ "--size": valueSize } as React.CSSProperties}>
         {value != null ? value : "—"}
         <span className={styles.unit}>{unit}</span>
       </div>

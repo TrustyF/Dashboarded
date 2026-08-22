@@ -52,6 +52,7 @@ export default function HomePage() {
                     className={styles.stepsCard}
                     label="Steps"
                     value={goalProgressPercent(fitbit?.steps, STEPS_GOAL)}
+                    valueSize={1.5}
                     unit="%"
                     diff={null}
                     color="#f2cc8f"
@@ -74,6 +75,7 @@ export default function HomePage() {
                     <StatCard
                         label="Temperature"
                         value={current?.temperature_2m != null ? Math.round(current.temperature_2m) : null}
+                        valueSize={1.5}
                         unit="°"
                         diff={netChange(nextTwoHours(hourly?.temperature_2m))}
                         color="#5b9bd5"
@@ -84,6 +86,8 @@ export default function HomePage() {
                     <StatCard
                         label="Indoor"
                         value={sensor?.temp?.at(-1) ?? null}
+                        valueSize={1.5}
+
                         unit="°"
                         diff={netChange(sensor?.temp)}
                         color="#c38869"
@@ -93,6 +97,8 @@ export default function HomePage() {
                     <StatCard
                         label="UV Index"
                         value={uvIndex}
+                        valueSize={1.5}
+
                         unit={uvCategory(uvIndex) ?? ""}
                         diffUnit=""
                         diff={netChange(nextTwoHours(hourly?.uv_index))}
@@ -106,6 +112,7 @@ export default function HomePage() {
                     <StatCard
                         label="Precipitation"
                         value={current?.precipitation ?? null}
+                        valueSize={1.5}
                         unit="mm"
                         diff={netChange(nextTwoHours(hourly?.precipitation))}
                         color="#3fb8af"
