@@ -1,7 +1,7 @@
 "use client";
 
 import ReactEChartsCore from "echarts-for-react/lib/core";
-import {echarts, THEME_NAME} from "@/lib/echarts-setup";
+import {echarts, NO_INTERACTION, THEME_NAME, withNoInteraction} from "@/lib/echarts-setup";
 
 type Point = { dateTime: string; value: number | null };
 
@@ -50,7 +50,7 @@ export default function WeightChart({weight, fat}: Props) {
             theme={THEME_NAME}
             style={{height: "100%", width: "100%"}}
             option={{
-                tooltip: {trigger: "axis"},
+                ...NO_INTERACTION,
                 grid: {left: 50, right: fat ? 110 : 80, top: 16, bottom: 30},
                 xAxis: {type: "time"},
                 yAxis: [
@@ -65,7 +65,7 @@ export default function WeightChart({weight, fat}: Props) {
                         axisLabel: {show: false, formatter: "{value}%"},
                     },
                 ],
-                series,
+                series: withNoInteraction(series),
             }}
         />
     );

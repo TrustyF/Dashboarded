@@ -54,9 +54,6 @@ export default function WeatherPage() {
           color={STAT_COLORS.temperature}
           sparkline={nextTwoHours(hourly.temperature_2m)}
           goodDirection="neutral"
-          icon={conditionIconSrc}
-          iconAlt={conditionTitle}
-          iconLabel={conditionTitle}
         />
         <StatCard
           label="UV Index"

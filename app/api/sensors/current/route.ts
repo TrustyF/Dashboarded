@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
+import { fakeSensorHistory } from "@/lib/fake-sensor-data";
 
 const DATA_PATH = process.env.SENSOR_DATA_PATH ?? "/data/sensor/latest.json";
 
@@ -13,6 +14,9 @@ export async function GET() {
       humidity: last >= 0 ? history.humidity[last] : null,
     });
   } catch {
-    return NextResponse.json({ temp: null, humidity: null });
+    if (process.env.NODE_ENV === "production") return NextResponse.json({ temp: null, humidity: null });
+    const fake = fakeSensorHistory();
+    const last = fake.temp.length - 1;
+    return NextResponse.json({ temp: fake.temp[last], humidity: fake.humidity[last] });
   }
 }

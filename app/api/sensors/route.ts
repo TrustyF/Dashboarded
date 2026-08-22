@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
+import { fakeSensorHistory } from "@/lib/fake-sensor-data";
 
 // Ported from dashboard_server/flask_blueprints/sensors_bp.py, but the actual
 // DHT22 GPIO read now happens in the standalone sensor_poller/poll.py process
@@ -22,7 +23,7 @@ async function readHistory(): Promise<SensorHistory> {
   try {
     return JSON.parse(await readFile(DATA_PATH, "utf-8"));
   } catch {
-    return { temp: [], humidity: [], time: [] };
+    return process.env.NODE_ENV === "production" ? { temp: [], humidity: [], time: [] } : fakeSensorHistory();
   }
 }
 

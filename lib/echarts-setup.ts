@@ -62,4 +62,34 @@ echarts.registerTheme(THEME_NAME, {
   },
 });
 
+// Spread into every chart's `option` - kiosk touchscreen only, no mouse, and
+// nothing here uses ECharts' own touch interactions (no dataZoom drag/pinch
+// anywhere in the app) - so hover/tap-triggered tooltips have no upside and
+// only risk fighting with Nav.tsx's document-level swipe gesture for
+// switching pages.
+//
+// There's no single root-level "silent" chart option (a prior version of
+// this tried `{ silent: true }` here - EChartsOption has no such field, it
+// only exists per-series/per-element, so that was a silent no-op). Killing
+// the tooltip and its axisPointer crosshair here covers the actual visible
+// interaction; pair this with `silent: true` on each series (see
+// withNoInteraction below) to also stop hover/click state on the shapes
+// themselves.
+//
+// IMPORTANT: spread this FIRST in each chart's option object, and don't
+// follow it with your own `tooltip`/`axisPointer` key - a later key of the
+// same name in the same object literal overrides this one outright, it
+// doesn't merge with it.
+export const NO_INTERACTION = {
+  tooltip: { show: false },
+  axisPointer: { show: false },
+};
+
+// Marks every series in the array silent - stops hover/click state and
+// cursor changes on the shapes themselves, on top of NO_INTERACTION's
+// tooltip/axisPointer suppression above.
+export function withNoInteraction<T extends Record<string, unknown>>(series: T[]): T[] {
+  return series.map((s) => ({ ...s, silent: true }));
+}
+
 export { echarts };

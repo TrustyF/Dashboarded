@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { LINKS } from "@/lib/nav-links";
+import { useViewTransitionNavigate } from "@/lib/view-transition-nav";
 import styles from "./Nav.module.sass";
 
 // Port of NavOverlay.vue: a floating icon pill, hidden by default (kiosk-style,
@@ -26,16 +28,6 @@ import styles from "./Nav.module.sass";
 // horizontal page-swipe apart from, say, scrolling the calendar timeline
 // vertically - no exclusion zone needed.
 
-const LINKS = [
-  { href: "/", icon: "bi-house-fill", iconInactive: "bi-house", label: "Home" },
-  { href: "/weather", icon: "bi-cloud-fill", iconInactive: "bi-cloud", label: "Weather" },
-  { href: "/spotify", icon: "bi-music-note", iconInactive: "bi-music-note", label: "Spotify" },
-  { href: "/health", icon: "bi-lungs-fill", iconInactive: "bi-lungs", label: "Health" },
-  { href: "/sensors", icon: "bi-thermometer-high", iconInactive: "bi-thermometer-low", label: "Sensors" },
-  { href: "/system", icon: "bi-hdd-network-fill", iconInactive: "bi-hdd-network", label: "System" },
-  { href: "/settings", icon: "bi-gear-fill", iconInactive: "bi-gear", label: "Settings" },
-];
-
 const HIDE_DELAY_MS = 10_000;
 const SWIPE_UP_THRESHOLD_PX = 40;
 // Bigger than the reveal strip's threshold - switching the whole page is a
@@ -45,7 +37,7 @@ const SWIPE_X_THRESHOLD_PX = 80;
 
 export default function Nav() {
   const pathname = usePathname();
-  const router = useRouter();
+  const navigate = useViewTransitionNavigate();
   const [hidden, setHidden] = useState(true);
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pillRef = useRef<HTMLDivElement>(null);
@@ -116,7 +108,7 @@ export default function Nav() {
       // swiping right moves back.
       const step = dx < 0 ? 1 : -1;
       const target = LINKS[(currentIndex + step + LINKS.length) % LINKS.length];
-      router.push(target.href);
+      navigate(target.href);
     }
 
     function onPointerCancel() {
@@ -131,7 +123,7 @@ export default function Nav() {
       document.removeEventListener("pointerup", onPointerUp);
       document.removeEventListener("pointercancel", onPointerCancel);
     };
-  }, [pathname, router]);
+  }, [pathname, navigate]);
 
   return (
     <>
@@ -152,6 +144,14 @@ export default function Nav() {
                 href={link.href}
                 className={active ? `${styles.box} ${styles.active}` : styles.box}
                 aria-label={link.label}
+                onClick={(e) => {
+                  // Keep <Link> for its built-in prefetching (still mounted,
+                  // still watching viewport intersection) but take over the
+                  // actual navigation so it goes through the same
+                  // view-transition-wrapped path as the swipe gesture below.
+                  e.preventDefault();
+                  navigate(link.href);
+                }}
               >
                 <i className={active ? `bi ${link.icon}` : `bi ${link.iconInactive}`} />
               </Link>

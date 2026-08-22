@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import type { ECharts } from "echarts/core";
 import ReactEChartsCore from "echarts-for-react/lib/core";
-import { echarts, THEME_NAME } from "@/lib/echarts-setup";
+import { echarts, NO_INTERACTION, THEME_NAME, withNoInteraction } from "@/lib/echarts-setup";
+import { movingAverage } from "@/lib/moving-average";
 import { CODE_MAP } from "@/components/weather/WeatherSummary";
 
 type Props = {
@@ -53,6 +56,21 @@ function rainAlpha(mm: number): number {
   return RAIN_MIN_ALPHA + t * (RAIN_MAX_ALPHA - RAIN_MIN_ALPHA);
 }
 
+// Same fix as Sparkline.tsx's handleReady, and same root cause: this chart's
+// container is flex-sized (.trendChart { flex: 1 }), so its final size isn't
+// settled yet at echarts-for-react's own mount-time measurement - it draws
+// once at a wrong/transient size, then the library's own ResizeObserver
+// corrects it once the flex layout actually settles. Sparkline's version of
+// this bug is invisible (it sets animation: false), but this chart's
+// entrance animation is on, so that later correction plays out as the line
+// visibly resetting and redrawing from scratch. Forcing the resize one frame
+// after mount - before the entrance animation has drawn anything worth
+// looking at - makes that correction happen before there's anything visible
+// to restart.
+function handleReady(instance: ECharts) {
+  requestAnimationFrame(() => instance.resize());
+}
+
 // Daily counterpart to the old HourlyTempChart - same reusable chart shape,
 // driven by per-day high/sunshine arrays (rain bands are the exception -
 // those come from the hourly precipitation series so each day's band can be
@@ -66,6 +84,20 @@ export default function DailyTempChart({
   hourlyTemps,
   weatherCodes,
 }: Props) {
+  // Drives the "now" dot below - re-evaluated once a minute (aligned to the
+  // minute boundary, same approach as components/clock/Clock.tsx) so the dot
+  // creeps forward through today without needing fresh forecast data.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    function tick() {
+      setNow(new Date());
+      timeoutId = setTimeout(tick, 60_000 - (Date.now() % 60_000));
+    }
+    tick();
+    return () => clearTimeout(timeoutId);
+  }, []);
+
   // Right margin has to fit each line's endLabel text (near the last data
   // point) and the extra axes' own tick labels, which sit further out.
   const gridRight = 60 + (sunshineHours ? 30 : 0);
@@ -143,21 +175,6 @@ export default function DailyTempChart({
     });
   });
 
-  // A bezier `smooth` curve still passes exactly through every data point,
-  // so hour-to-hour jitter in the raw forecast reads as little kinks no
-  // matter how high that setting goes - a centered moving average over the
-  // readings themselves is what actually flattens it, while still tracking
-  // the real rise/fall of each day. Shared by the Temp line and the rain
-  // bands below.
-  function movingAverage(points: [number, number][], window: number): [number, number][] {
-    const half = Math.floor(window / 2);
-    return points.map(([x], i) => {
-      const slice = points.slice(Math.max(0, i - half), Math.min(points.length, i + half + 1));
-      const avg = slice.reduce((sum, [, y]) => sum + y, 0) / slice.length;
-      return [x, avg];
-    });
-  }
-
   // Temp plots at each reading's own position when hourly data is
   // available, falling back to one point at each day's *center* -
   // dayIdx+0.5 - lining up under that day's centered label. Either way, a
@@ -176,6 +193,25 @@ export default function DailyTempChart({
     [leadX, p0[1] - leadSlope * (p0[0] - leadX)],
     ...realTempPoints,
   ];
+
+  // "Now" dot: times[0] is always today (see app/weather/page.tsx's own
+  // "daily.* is index-0-is-today" comment), and that day's slot on this
+  // value axis runs from x=0 to x=1, so the fraction of today that's
+  // elapsed maps directly onto it. y is linearly interpolated along the
+  // same tempData the line itself is drawn from, so the dot always sits
+  // exactly on the curve rather than needing its own temperature reading.
+  function interpolateY(points: [number, number][], x: number): number | null {
+    for (let i = 1; i < points.length; i++) {
+      const [x0, y0] = points[i - 1];
+      const [x1, y1] = points[i];
+      if (x < x0 || x > x1) continue;
+      return x1 === x0 ? y0 : y0 + ((y1 - y0) * (x - x0)) / (x1 - x0);
+    }
+    return null;
+  }
+  const todayStart = new Date(`${times[0]}T00:00`);
+  const nowX = (now.getTime() - todayStart.getTime()) / 86_400_000;
+  const nowY = nowX >= 0 && nowX <= 1 ? interpolateY(tempData, nowX) : null;
 
   // Smooth the raw per-hour mm readings before anything else uses them, so
   // both which hours count as "rainy" (the threshold below) and how intense
@@ -243,6 +279,16 @@ export default function DailyTempChart({
       clip: false,
       // areaStyle: { color: "#5b9bd5", opacity: 0.55 },
       endLabel: { show: true, formatter: "{a}", color: "#5b9bd5" },
+      markPoint:
+        nowY != null
+          ? {
+              symbol: "circle",
+              symbolSize: 9,
+              itemStyle: { color: "#5b9bd5", borderColor: "#16191d", borderWidth: 2 },
+              label: { show: false },
+              data: [{ coord: [nowX, nowY] }],
+            }
+          : undefined,
     },
     {
       name: "RainBands",
@@ -280,8 +326,17 @@ export default function DailyTempChart({
       echarts={echarts}
       theme={THEME_NAME}
       style={{ height: "100%", width: "100%" }}
+      onChartReady={handleReady}
       option={{
-        tooltip: { trigger: "axis" },
+        ...NO_INTERACTION,
+        // Same call as Sparkline.tsx's animation: false, same reason: the
+        // entrance draw-in has caused two separate glitches here (a
+        // container-resize race replaying it from scratch, and the endLabel/
+        // final segment visibly snapping into place right as it finishes) -
+        // both are ECharts' own animation-completion timing, not something
+        // fixable by scheduling when the chart starts rendering. Drawing the
+        // final state immediately removes both at the source.
+        animation: false,
         grid: { left: 50, right: gridRight, top: 16, bottom: 25 },
         xAxis: [
           {
@@ -322,7 +377,7 @@ export default function DailyTempChart({
           max: Math.max(...realTempPoints.map((p) => p[1])),
           inRange: { color: ["#5b9bd5", "#3fb8af", "#e8c15a", "#e0703f"] },
         },
-        series,
+        series: withNoInteraction(series),
       }}
     />
   );

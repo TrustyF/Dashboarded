@@ -2,7 +2,7 @@
 
 import type { ECharts } from "echarts/core";
 import ReactEChartsCore from "echarts-for-react/lib/core";
-import { echarts, THEME_NAME } from "@/lib/echarts-setup";
+import { echarts, NO_INTERACTION, THEME_NAME, withNoInteraction } from "@/lib/echarts-setup";
 
 type Props = {
   data: (number | null)[];
@@ -42,11 +42,12 @@ export default function Sparkline({ data, color, min, max }: Props) {
       style={{ height: "2.2em", width: "100%" }}
       onChartReady={handleReady}
       option={{
+        ...NO_INTERACTION,
         animation: false,
         grid: { left: 0, right: 0, top: 4, bottom: 0 },
         xAxis: { type: "category", show: false, boundaryGap: false, data: data.map((_, i) => i) },
         yAxis: { type: "value", show: false, scale: min == null, min, max },
-        series: [
+        series: withNoInteraction([
           {
             type: "line",
             data,
@@ -56,7 +57,7 @@ export default function Sparkline({ data, color, min, max }: Props) {
             lineStyle: { width: 2, color },
             areaStyle: { color, opacity: 0.15 },
           },
-        ],
+        ]),
       }}
     />
   );

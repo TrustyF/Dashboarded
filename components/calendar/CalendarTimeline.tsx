@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { EVENT_COLORS } from "@/lib/calendar-colors";
 import styles from "./CalendarTimeline.module.sass";
 
@@ -73,14 +73,7 @@ function eventColor(event: CalendarEvent) {
 // Today's events skip the dot-and-line rail entirely - there's no "time until"
 // left to show, so they read better as their own callout cards than as the
 // start of a timeline that's really about the future.
-function TodayCard({ event }: { event: CalendarEvent }) {
-  const [{ text }, setCountdown] = useState(() => describeCountdown(event.date, event.allDay));
-
-  useEffect(() => {
-    const id = setInterval(() => setCountdown(describeCountdown(event.date, event.allDay)), 2000);
-    return () => clearInterval(id);
-  }, [event.date, event.allDay]);
-
+function TodayCard({ event, text }: { event: CalendarEvent; text: string }) {
   const color = eventColor(event);
 
   return (
@@ -101,18 +94,15 @@ function EventRow({
   event,
   isLast,
   gapEm,
+  text,
+  days,
 }: {
   event: CalendarEvent;
   isLast: boolean;
   gapEm: number;
+  text: string;
+  days: number;
 }) {
-  const [{ text, days }, setCountdown] = useState(() => describeCountdown(event.date, event.allDay));
-
-  useEffect(() => {
-    const id = setInterval(() => setCountdown(describeCountdown(event.date, event.allDay)), 2000);
-    return () => clearInterval(id);
-  }, [event.date, event.allDay]);
-
   const color = eventColor(event);
 
   return (
@@ -129,20 +119,45 @@ function EventRow({
   );
 }
 
+// One shared ticker for every row's countdown instead of each row running
+// its own setInterval - with a full calendar's worth of events that used to
+// mean dozens of independent timers each firing (and re-rendering) on their
+// own cadence, competing with the main thread right when the kiosk is mid
+// page-swipe. A single tick here recomputes every countdown as one state
+// update and one batched re-render instead of N.
+function useTick(intervalMs: number) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return tick;
+}
+
 export default function CalendarTimeline({ events }: { events: CalendarEvent[] }) {
-  const shown = events.slice(0, 200);
-  const todayEvents = shown.filter((e) => describeCountdown(e.date, e.allDay).days === 0);
-  // Recurring events are only worth surfacing on the day they're actually
-  // happening - a repeating series doesn't belong in the future timeline,
-  // which is about distinct one-off things coming up.
-  const laterEvents = shown.filter((e) => describeCountdown(e.date, e.allDay).days !== 0 && !e.recurring);
+  // Nothing describeCountdown() produces (clock time, day count, the "Now"
+  // flip) ever changes on a sub-minute basis, so there's no reason to
+  // recheck more often than the displayed text could actually change.
+  const tick = useTick(60_000);
+
+  const { todayEvents, laterEvents, countdowns } = useMemo(() => {
+    const shown = events.slice(0, 200);
+    const countdowns = new Map(shown.map((e) => [e.id, describeCountdown(e.date, e.allDay)]));
+    const todayEvents = shown.filter((e) => countdowns.get(e.id)!.days === 0);
+    // Recurring events are only worth surfacing on the day they're actually
+    // happening - a repeating series doesn't belong in the future timeline,
+    // which is about distinct one-off things coming up.
+    const laterEvents = shown.filter((e) => countdowns.get(e.id)!.days !== 0 && !e.recurring);
+    return { todayEvents, laterEvents, countdowns };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tick is a deliberate recompute trigger, not a data dependency
+  }, [events, tick]);
 
   return (
     <div className={styles.wrapper}>
       {todayEvents.length > 0 && (
         <div className={styles.todaySection}>
           {todayEvents.map((event) => (
-            <TodayCard event={event} key={event.id} />
+            <TodayCard event={event} text={countdowns.get(event.id)!.text} key={event.id} />
           ))}
         </div>
       )}
@@ -155,8 +170,18 @@ export default function CalendarTimeline({ events }: { events: CalendarEvent[] }
                 (new Date(next.date).getTime() - new Date(event.date).getTime()) / 86400000
               )
             : MIN_GAP_EM;
+          const { text, days } = countdowns.get(event.id)!;
 
-          return <EventRow event={event} isLast={i === laterEvents.length - 1} gapEm={gapEm} key={event.id} />;
+          return (
+            <EventRow
+              event={event}
+              isLast={i === laterEvents.length - 1}
+              gapEm={gapEm}
+              text={text}
+              days={days}
+              key={event.id}
+            />
+          );
         })}
       </div>
     </div>

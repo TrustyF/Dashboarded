@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import Nav from "@/components/Nav";
+import AppPrefetch from "@/components/AppPrefetch";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./globals.sass";
 
@@ -54,6 +55,7 @@ export default function RootLayout({
     >
       <body>
         <Nav />
+        <AppPrefetch />
         <main>{children}</main>
       </body>
     </html>

@@ -49,3 +49,59 @@ body
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif
   background: v.$bg
   color: v.$text
+
+// Named separately from the document root ("root") so it can be animated
+// on its own - Nav's pill/edge-strip live outside <main> and shouldn't
+// visually re-fade on every navigation just because they're technically
+// part of the same document snapshot. lib/view-transition-nav.ts triggers
+// the actual transition and sets [data-nav-direction] right before it does.
+main
+  view-transition-name: page-content
+
+// Suppress the default cross-fade for anything view-transition-name:page-content
+// doesn't cover (Nav's pill, the edge strip) - those don't change between
+// routes, but without this they'd still get a same-duration opacity
+// animation stacked underneath the slide below.
+::view-transition-old(root),
+::view-transition-new(root)
+  animation: none
+  mix-blend-mode: normal
+
+// Same - disable the default cross-fade on the named group so only the
+// slide keyframes below are visible, not a fade+slide combination.
+::view-transition-old(page-content),
+::view-transition-new(page-content)
+  animation: none
+  mix-blend-mode: normal
+
+@keyframes slide-out-left
+  to
+    transform: translateX(-100%)
+
+@keyframes slide-in-from-right
+  from
+    transform: translateX(100%)
+  to
+    transform: translateX(0)
+
+@keyframes slide-out-right
+  to
+    transform: translateX(100%)
+
+@keyframes slide-in-from-left
+  from
+    transform: translateX(-100%)
+  to
+    transform: translateX(0)
+
+:root[data-nav-direction="forward"]
+  &::view-transition-old(page-content)
+    animation: slide-out-left 250ms ease-out forwards
+  &::view-transition-new(page-content)
+    animation: slide-in-from-right 250ms ease-out forwards
+
+:root[data-nav-direction="backward"]
+  &::view-transition-old(page-content)
+    animation: slide-out-right 250ms ease-out forwards
+  &::view-transition-new(page-content)
+    animation: slide-in-from-left 250ms ease-out forwards
