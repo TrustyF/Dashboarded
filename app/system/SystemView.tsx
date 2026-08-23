@@ -4,10 +4,10 @@ import { useSensorHistory, useVitals, useVitalsHistory } from "@/lib/hooks";
 import { netChange } from "@/lib/weather-metrics";
 import StatCard from "@/components/stats/StatCard";
 import { STAT_COLORS } from "@/lib/stat-colors";
-import styles from "./page.module.sass";
+import styles from "./SystemView.module.sass";
 
-// Same Google Fit/Health Connect style overview as app/weather/page.tsx and
-// app/health/page.tsx: quick-glance stat tiles, each with its own sparkline
+// Same Google Fit/Health Connect style overview as app/weather/WeatherView.tsx and
+// app/health/HealthView.tsx: quick-glance stat tiles, each with its own sparkline
 // trend - was a bespoke chart-per-card layout, brought back in line with
 // that shared pattern. Built after diagnosing a flaky PSU by hand (Aug 22)
 // via repeated `vcgencmd`/`dmesg` polling over SSH - the under-voltage tile
@@ -25,7 +25,7 @@ function formatAgo(ms: number): string {
   return `${hours}h ago`;
 }
 
-export default function SystemPage() {
+export default function SystemView() {
   const { data: vitals } = useVitals();
   const { data: history, isLoading } = useVitalsHistory();
   const { data: sensorHistory } = useSensorHistory();

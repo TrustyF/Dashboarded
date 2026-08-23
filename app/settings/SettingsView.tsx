@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useBrightness } from "@/lib/hooks";
-import styles from "./page.module.sass";
+import styles from "./SettingsView.module.sass";
 
 // Kiosk-local settings - controls for things the Pi itself exposes (currently
 // just screen brightness, via the brightnessctl-backed
 // /api/settings/toggle-brightness route). Structured as a list of setting
 // rows so more can be added later without reshaping the page.
 
-export default function SettingsPage() {
+export default function SettingsView() {
   const { data, mutate } = useBrightness();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);

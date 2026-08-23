@@ -8,7 +8,7 @@ import StatCard from "@/components/stats/StatCard";
 import StepRings, { STEPS_GOAL } from "@/components/stats/StepRings";
 import RangeSelector from "@/components/health/RangeSelector";
 import { STAT_COLORS } from "@/lib/stat-colors";
-import styles from "./page.module.sass";
+import styles from "./HealthView.module.sass";
 
 // ECharts is a ~650KB chunk - loading it eagerly blocks hydration (and so
 // the SWR fetch that clears the "Loading…" state) behind that download+parse
@@ -18,7 +18,7 @@ const WeightChart = dynamic(() => import("@/components/charts/WeightChart"), { s
 
 // Google Fit/Health Connect style overview: quick-glance stat tiles up top,
 // the detailed trend chart underneath.
-export default function HealthPage() {
+export default function HealthView() {
   const [days, setDays] = useState(29);
   const { data, isLoading } = useFitbit(days);
 

@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import Nav from "@/components/Nav";
-import AppPrefetch from "@/components/AppPrefetch";
+import { ActiveViewProvider } from "@/lib/active-view";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./globals.sass";
 
@@ -54,9 +54,10 @@ export default function RootLayout({
       data-kiosk={process.env.NODE_ENV === "production" ? "" : undefined}
     >
       <body>
-        <Nav />
-        <AppPrefetch />
-        <main>{children}</main>
+        <ActiveViewProvider>
+          <Nav />
+          <main>{children}</main>
+        </ActiveViewProvider>
       </body>
     </html>
   );

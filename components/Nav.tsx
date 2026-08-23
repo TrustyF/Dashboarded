@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LINKS } from "@/lib/nav-links";
-import { useNavigate } from "@/lib/navigate";
+import { useActiveView } from "@/lib/active-view";
 import styles from "./Nav.module.sass";
 
 // Port of NavOverlay.vue: a floating icon pill, hidden by default (kiosk-style,
@@ -36,8 +34,7 @@ const SWIPE_UP_THRESHOLD_PX = 40;
 const SWIPE_X_THRESHOLD_PX = 80;
 
 export default function Nav() {
-  const pathname = usePathname();
-  const navigate = useNavigate();
+  const { activeHref, setActiveView } = useActiveView();
   const [hidden, setHidden] = useState(true);
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pillRef = useRef<HTMLDivElement>(null);
@@ -101,14 +98,14 @@ export default function Nav() {
       const dy = e.clientY - g.startY;
       if (Math.abs(dx) < SWIPE_X_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) return;
 
-      const currentIndex = LINKS.findIndex((link) => link.href === pathname);
+      const currentIndex = LINKS.findIndex((link) => link.href === activeHref);
       if (currentIndex === -1) return;
 
       // Swiping left moves forward through the list (like turning a page),
       // swiping right moves back.
       const step = dx < 0 ? 1 : -1;
       const target = LINKS[(currentIndex + step + LINKS.length) % LINKS.length];
-      navigate(target.href);
+      setActiveView(target.href);
     }
 
     function onPointerCancel() {
@@ -123,7 +120,7 @@ export default function Nav() {
       document.removeEventListener("pointerup", onPointerUp);
       document.removeEventListener("pointercancel", onPointerCancel);
     };
-  }, [pathname, navigate]);
+  }, [activeHref, setActiveView]);
 
   return (
     <>
@@ -137,24 +134,17 @@ export default function Nav() {
       <div className={styles.pill} data-hidden={hidden} ref={pillRef}>
         <nav className={styles.wrapper}>
           {LINKS.map((link) => {
-            const active = pathname === link.href;
+            const active = activeHref === link.href;
             return (
-              <Link
+              <button
                 key={link.href}
-                href={link.href}
+                type="button"
                 className={active ? `${styles.box} ${styles.active}` : styles.box}
                 aria-label={link.label}
-                onClick={(e) => {
-                  // Keep <Link> for its built-in prefetching (still mounted,
-                  // still watching viewport intersection) but take over the
-                  // actual navigation so it goes through the same path as
-                  // the swipe gesture below.
-                  e.preventDefault();
-                  navigate(link.href);
-                }}
+                onClick={() => setActiveView(link.href)}
               >
                 <i className={active ? `bi ${link.icon}` : `bi ${link.iconInactive}`} />
-              </Link>
+              </button>
             );
           })}
         </nav>

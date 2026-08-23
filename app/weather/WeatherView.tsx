@@ -6,16 +6,16 @@ import { netChange, uvCategory, uvIcon } from "@/lib/weather-metrics";
 import { CODE_MAP } from "@/components/weather/WeatherSummary";
 import StatCard from "@/components/stats/StatCard";
 import { STAT_COLORS } from "@/lib/stat-colors";
-import styles from "./page.module.sass";
+import styles from "./WeatherView.module.sass";
 
 // ECharts is a ~650KB chunk - deferring it keeps the shell interactive (and
 // the weather fetch that clears the "Loading…" state running) instead of
 // blocking hydration behind that download+parse.
 const DailyTempChart = dynamic(() => import("@/components/charts/DailyTempChart"), { ssr: false });
 
-// Same Google Fit/Health Connect style overview as app/health/page.tsx:
+// Same Google Fit/Health Connect style overview as app/health/HealthView.tsx:
 // quick-glance stat tiles up top, the detailed trend chart underneath.
-export default function WeatherPage() {
+export default function WeatherView() {
   const { data, isLoading } = useWeather();
   const { data: sensor } = useSensorHistory();
 

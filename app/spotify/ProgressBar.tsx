@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import styles from "./page.module.sass";
+import styles from "./SpotifyView.module.sass";
 
 type Props = {
   progressMs: number;

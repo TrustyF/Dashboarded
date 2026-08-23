@@ -2,12 +2,12 @@
 
 import dynamic from "next/dynamic";
 import { useSensorCurrent, useSensorHistory } from "@/lib/hooks";
-import styles from "./page.module.sass";
+import styles from "./SensorsView.module.sass";
 
-// See app/weather/page.tsx's DailyTempChart import for why this is deferred.
+// See app/weather/WeatherView.tsx's DailyTempChart import for why this is deferred.
 const SensorHistoryChart = dynamic(() => import("@/components/charts/SensorHistoryChart"), { ssr: false });
 
-export default function SensorsPage() {
+export default function SensorsView() {
   const { data: current } = useSensorCurrent();
   const { data: history, isLoading } = useSensorHistory();
 

@@ -4,7 +4,7 @@ import { useSpotifyNowPlaying } from "@/lib/hooks";
 import ProgressBar from "./ProgressBar";
 import { useDeferredImageUrl } from "./useDeferredImageUrl";
 import { useCrossfadeLayers } from "./useCrossfadeLayers";
-import styles from "./page.module.sass";
+import styles from "./SpotifyView.module.sass";
 
 // Visual port of SpotifyView.vue. The original used the Spotify Web Playback
 // SDK's *name* but not its actual playback features - it only ever polled
@@ -24,7 +24,7 @@ function formatDuration(ms: number) {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-export default function SpotifyPage() {
+export default function SpotifyView() {
   const { track, progressMs, error, notches } = useSpotifyNowPlaying();
 
   const rawArtUrl = track?.album.images[1]?.url ?? track?.album.images[0]?.url;
