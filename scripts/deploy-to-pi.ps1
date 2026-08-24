@@ -106,9 +106,14 @@ if (-not $SkipApp) {
     # set up yet on an older install, etc.) - the app itself already deployed
     # fine either way.
     Write-Host "Waiting for the app to come back up, then reloading the kiosk tab..."
+    # Piped over stdin to `bash -s` rather than passed as a command-line
+    # argument - PowerShell 5.1's argument-to-native-exe escaping mangles a
+    # string with this much embedded quoting/parens ($(seq...), the quoted
+    # echo message), which showed up as the remote shell choking on a
+    # `(` it should never have seen. Stdin sidesteps that escaping entirely.
     $reloadCmd = 'for i in $(seq 1 60); do curl -sf -o /dev/null http://localhost:3000 && break; sleep 1; done; ' +
                  'python3 /usr/local/bin/reload-dashboard.py || echo "reload-dashboard: skipped (kiosk not reachable, or not set up on this install)"'
-    ssh $PiHost $reloadCmd
+    $reloadCmd | ssh $PiHost bash -s
 }
 
 Remove-Item -Recurse -Force $tmpDir

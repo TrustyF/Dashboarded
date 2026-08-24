@@ -1,9 +1,5 @@
 import { readFile } from "node:fs/promises";
 
-// Shared between app/api/fitbit/route.ts and app/api/fitbit/debug/route.ts -
-// pulled out so the debug route exercises the exact same token/date logic
-// the real route uses, instead of a second copy that can drift out of sync.
-
 export const TOKEN_PATH = process.env.GOOGLE_HEALTH_TOKEN_PATH ?? "/data/tokens/google_health_token.json";
 export const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
 export const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
