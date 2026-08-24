@@ -23,6 +23,14 @@ services:
     privileged: true
     ports:
       - "3000:3000"
+    environment:
+      # Base image defaults to UTC - without this, server-side "local time"
+      # math (e.g. the steps graph's Monday-start-of-week calc in
+      # app/api/fitbit/route.ts) runs on the container's UTC clock instead of
+      # the dashboard's real timezone. For any zone behind UTC (Pacific here,
+      # matching WEATHER_LAT/LON below), that flips the container to
+      # "tomorrow" hours before it's actually tomorrow locally.
+      TZ: America/Vancouver
     env_file:
       - ./.env.local.production
     volumes:

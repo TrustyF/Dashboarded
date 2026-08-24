@@ -66,3 +66,18 @@ export async function cachedFetch<T>(key: string, ttlSeconds: number, fetcher: (
   if (isDev) await persist();
   return data;
 }
+
+// Debug-only introspection - lets a diagnostic route show what's actually
+// sitting in the cache (and for how much longer) without reaching into the
+// module-private `store` directly.
+export function cacheSnapshot(keyPrefix: string): Array<{ key: string; data: unknown; expiresAt: string; expired: boolean }> {
+  const now = Date.now();
+  return Array.from(store.entries())
+    .filter(([key]) => key.startsWith(keyPrefix))
+    .map(([key, entry]) => ({
+      key,
+      data: entry.data,
+      expiresAt: new Date(entry.expiresAt).toISOString(),
+      expired: now >= entry.expiresAt,
+    }));
+}

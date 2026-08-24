@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFile } from "node:fs/promises";
 import { cachedFetch } from "@/lib/api-cache";
+import { getAccessToken, toCivilDate, civilDateStr, startOfWeek, type CivilDate } from "@/lib/google-health";
 
 // Replaces the legacy Fitbit Web API integration - Fitbit's API is being
 // decommissioned by Google in favor of the Google Health API (same
@@ -13,19 +13,13 @@ import { cachedFetch } from "@/lib/api-cache";
 // rejects tokens that also carry other product scopes like Calendar's, so
 // this can't share app/api/calendar's GOOGLE_TOKEN_PATH file).
 
-const TOKEN_PATH = process.env.GOOGLE_HEALTH_TOKEN_PATH ?? "/data/tokens/google_health_token.json";
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
-
 // Same "shared, time-boxed cache" approach as the other API routes.
-const REVALIDATE_SECONDS = 3600; // 1 hour
+const REVALIDATE_SECONDS = 1800; // 30 minutes
 
 // No BMI data type exists on this API (confirmed: `bmi` 400s with
 // INVALID_ARGUMENT) - Fitbit's log endpoint used to bundle it in for free,
 // but computing it here would need a hardcoded height nobody's tracking, so
 // the BMI stat card was dropped from the health page instead.
-
-type CivilDate = { year: number; month: number; day: number };
 
 type WeightPoint = {
   weight?: { sampleTime: { physicalTime: string; civilTime?: { date: CivilDate } }; weightGrams: number };
@@ -36,33 +30,6 @@ type StepsRollupPoint = {
   civilStartTime: { date: CivilDate };
   steps?: { countSum: string };
 };
-
-async function getAccessToken(): Promise<string> {
-  let refresh_token: string;
-  try {
-    const raw = await readFile(TOKEN_PATH, "utf-8");
-    ({ refresh_token } = JSON.parse(raw));
-  } catch {
-    // Missing/unparseable token file - same "needs re-bootstrapping" bucket
-    // as a rejected refresh token, not a transient rate-limit.
-    throw new Error("invalid-credentials");
-  }
-
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      refresh_token,
-      grant_type: "refresh_token",
-    }),
-  });
-
-  if (!res.ok) throw new Error("invalid-credentials");
-  const json = await res.json();
-  return json.access_token;
-}
 
 async function queryDataPoints<T>(dataType: string, accessToken: string, pageSize: number): Promise<T[]> {
   return cachedFetch(`fitbit:${dataType}`, REVALIDATE_SECONDS, async () => {
@@ -78,15 +45,6 @@ async function queryDataPoints<T>(dataType: string, accessToken: string, pageSiz
     const json = await res.json();
     return (json.dataPoints ?? []) as T[];
   });
-}
-
-function toCivilDate(date: Date): CivilDate {
-  return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate() };
-}
-
-function civilDateStr(date: CivilDate | undefined, fallbackIso: string): string {
-  if (!date) return fallbackIso.slice(0, 10);
-  return `${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
 }
 
 // Weight/body-fat are logged sporadically (a handful of scale weigh-ins a
@@ -116,15 +74,6 @@ async function queryMeasurement(
   }
 
   return out.sort((a, b) => a.dateTime.localeCompare(b.dateTime));
-}
-
-// Monday 00:00 of the week containing `date` (local time) - matches the
-// Monday-first week CalendarGrid.tsx uses for its month grid.
-function startOfWeek(date: Date): Date {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-  return start;
 }
 
 type StepsWeek = Array<{ dateTime: string; value: number }>;

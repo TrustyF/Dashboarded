@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import type { NowPlaying } from "@/lib/spotify";
+import { useActiveView } from "@/lib/active-view";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -27,7 +28,7 @@ export function useSensorHistory() {
 }
 
 export function useFitbit(timeDelta = 300) {
-  return useSWR(`/api/fitbit?time_delta=${timeDelta}`, fetcher, { refreshInterval: 60 * 60_000 });
+  return useSWR(`/api/fitbit?time_delta=${timeDelta}`, fetcher, { refreshInterval: 30 * 60_000 });
 }
 
 export function useVitals() {
@@ -102,7 +103,7 @@ export function useSpotifyNowPlaying(): NowPlaying & { notches: number[] } {
   // since (unlike the old formula) there's no smoothness reason not to.
   const [notches, setNotches] = useState<number[]>([]);
 
-  const { data } = useSWR<NowPlaying>("/api/spotify/now-playing", fetcher, {
+  const { data, mutate } = useSWR<NowPlaying>("/api/spotify/now-playing", fetcher, {
     // Pure - just computes the next delay. setState belongs in onSuccess
     // below: SWR evaluates this more eagerly than "only on a timer", so a
     // setState call here (tried initially) causes it to re-run inside its
@@ -135,6 +136,16 @@ export function useSpotifyNowPlaying(): NowPlaying & { notches: number[] } {
       setNotches(planned);
     },
   });
+
+  // Views mount once and stay alive forever, polling on their own schedule
+  // regardless of visibility (see ViewHost.tsx) - so switching back to
+  // Spotify can land on data up to SPOTIFY_MAX_INTERVAL_MS (4 min) stale if
+  // nothing was playing when you left. Revalidate immediately on becoming
+  // the active view instead of waiting for the next scheduled poll.
+  const { activeHref } = useActiveView();
+  useEffect(() => {
+    if (activeHref === "/spotify") mutate();
+  }, [activeHref, mutate]);
 
   return { ...(data ?? { track: null, progressMs: 0 }), notches };
 }

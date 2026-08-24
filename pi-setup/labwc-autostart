@@ -17,6 +17,14 @@ done
 # to load it - Chromium doesn't retry a failed page load on its own.
 /usr/local/bin/wait-for-dashboard.sh
 
+# CDP lets deploy-to-pi.ps1 (via reload-dashboard.py) tell this exact running
+# tab to reload after a deploy, instead of killing/relaunching chromium -
+# there's no supervisor around this process (see the header comment above),
+# so a kill here would leave the screen dead until someone power-cycles the
+# Pi. Bound to loopback only: CDP has no auth, so anyone who could reach it
+# would get full control of the browser (arbitrary JS, read local storage,
+# etc.) - explicit --remote-debugging-address rather than relying on
+# Chromium's default in case that default ever changes.
 chromium \
   --kiosk \
   --noerrdialogs \
@@ -26,4 +34,18 @@ chromium \
   --check-for-update-interval=31536000 \
   --ozone-platform=wayland \
   --window-size=1280,720 \
+  --remote-debugging-port=9222 \
+  --remote-debugging-address=127.0.0.1 \
   http://localhost:3000 &
+
+# Chromium doesn't hide the cursor from globals.sass's cursor:none CSS until
+# it processes a real pointer event (see hide-cursor.py) - nudge it once so
+# the cursor is already gone before anyone actually touches the screen.
+# Backgrounded + retried since chromium/its CDP port/the page's own target
+# all take a moment to be ready after the launch above.
+(
+  for i in $(seq 1 30); do
+    python3 /usr/local/bin/hide-cursor.py && break
+    sleep 1
+  done
+) &

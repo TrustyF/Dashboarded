@@ -95,6 +95,22 @@ $rmCmds = ($tarNames | ForEach-Object { "rm -f $_" }) -join " && "
 ssh $PiHost "cd $PiPath && $loadCmds && $rmCmds && docker compose up -d"
 Invoke-Native "ssh deploy step"
 
+if (-not $SkipApp) {
+    # The kiosk's chromium tab (pi-setup/labwc-autostart) was already open
+    # before this deploy and just keeps running whatever JS it first loaded -
+    # a container restart alone doesn't touch it. reload-dashboard.py (via
+    # CDP, see labwc-autostart) tells that exact tab to reload in place,
+    # rather than killing/relaunching chromium: it has no supervisor, so a
+    # kill would leave the screen dead until someone power-cycles the Pi.
+    # Not a deploy failure if this doesn't work (kiosk not running, CDP not
+    # set up yet on an older install, etc.) - the app itself already deployed
+    # fine either way.
+    Write-Host "Waiting for the app to come back up, then reloading the kiosk tab..."
+    $reloadCmd = 'for i in $(seq 1 60); do curl -sf -o /dev/null http://localhost:3000 && break; sleep 1; done; ' +
+                 'python3 /usr/local/bin/reload-dashboard.py || echo "reload-dashboard: skipped (kiosk not reachable, or not set up on this install)"'
+    ssh $PiHost $reloadCmd
+}
+
 Remove-Item -Recurse -Force $tmpDir
 
 Write-Host "Done."

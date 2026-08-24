@@ -27,10 +27,18 @@ echo "Installing labwc + chromium..."
 apt-get update
 # libinput-tools isn't needed to run the kiosk - it's `libinput list-devices`,
 # for debugging touch calibration (pi-setup/rc.xml) if taps ever misbehave.
-apt-get install -y --no-install-recommends labwc chromium curl wlr-randr libinput-tools
+# python3 runs the CDP helper scripts (reload-dashboard.py, hide-cursor.py) -
+# virtually always present already on Raspberry Pi OS, but listed explicitly
+# since this script owns declaring what the kiosk setup actually depends on.
+apt-get install -y --no-install-recommends labwc chromium curl wlr-randr libinput-tools python3
 
 echo "Installing wait-for-dashboard.sh..."
 install -m 755 "$SCRIPT_DIR/wait-for-dashboard.sh" /usr/local/bin/wait-for-dashboard.sh
+
+echo "Installing CDP helper scripts..."
+install -m 644 "$SCRIPT_DIR/cdp_client.py" /usr/local/bin/cdp_client.py
+install -m 755 "$SCRIPT_DIR/reload-dashboard.py" /usr/local/bin/reload-dashboard.py
+install -m 755 "$SCRIPT_DIR/hide-cursor.py" /usr/local/bin/hide-cursor.py
 
 echo "Installing labwc autostart for user: $KIOSK_USER"
 install -d -o "$KIOSK_USER" -g "$KIOSK_USER" "$KIOSK_HOME/.config/labwc"

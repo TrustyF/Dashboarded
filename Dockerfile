@@ -38,7 +38,11 @@ ENV NODE_ENV=production
 # /sys/class/backlight mount from docker-compose.yml. On Debian that path is
 # typically group-owned "video", so nextjs joins that group (rather than
 # running the whole container as root) to get write access to it.
-RUN apt-get update && apt-get install -y --no-install-recommends brightnessctl \
+#
+# tzdata provides the /usr/share/zoneinfo data that docker-compose.yml's TZ
+# env var needs to actually resolve - without it, Node's Date/Intl local-time
+# methods silently stay on UTC regardless of TZ.
+RUN apt-get update && apt-get install -y --no-install-recommends brightnessctl tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system nextjs && useradd --system --gid nextjs nextjs \
