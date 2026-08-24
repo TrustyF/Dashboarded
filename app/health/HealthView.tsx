@@ -24,11 +24,6 @@ export default function HealthView() {
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Health</h1>
-        <RangeSelector value={days} onChange={setDays} />
-      </div>
-
       {isLoading ? (
         <p>Loading…</p>
       ) : data?.error === "invalid-credentials" ? (
@@ -47,6 +42,7 @@ export default function HealthView() {
               diff={avgDiff(data.weight)}
               color={STAT_COLORS.weight}
               sparkline={data.weight.map((p: { value: number | null }) => p.value)}
+              className={styles.statShrink}
             />
             <StatCard
               label="Body fat"
@@ -55,6 +51,7 @@ export default function HealthView() {
               diff={avgDiff(data.fat)}
               color={STAT_COLORS.bodyFat}
               sparkline={data.fat.map((p: { value: number | null }) => p.value)}
+              className={styles.statShrink}
             />
             <StatCard
               label="Steps (this week)"
@@ -66,13 +63,17 @@ export default function HealthView() {
               sparkline={data.steps.map((p: { value: number | null }) => p.value)}
               goodDirection="up"
               visual={<StepRings days={data.steps} color={STAT_COLORS.steps} />}
+              className={styles.statGrow}
             />
           </div>
 
           <div className={styles.trendCard}>
-            <div className={styles.trendHeader}>Weight &amp; body fat trend</div>
+            <div className={styles.trendHeaderRow}>
+              <div className={styles.trendHeader}>Weight &amp; body fat trend</div>
+              <RangeSelector value={days} onChange={setDays} />
+            </div>
             <div className={styles.trendChart}>
-              <WeightChart weight={data.weight} fat={data.fat} />
+              <WeightChart weight={data.weight} fat={data.fat} steps={data.stepsHistory} />
             </div>
           </div>
         </>

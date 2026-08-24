@@ -82,10 +82,47 @@ type StepsWeek = Array<{ dateTime: string; value: number }>;
 // just a week, which blew past Next's fetch cache size limit. `dailyRollUp`
 // (a POST method alongside list/get/create) does the civil-day bucketing
 // server-side instead and hands back one small entry per day. Also: POST
-// requests aren't eligible for Next's fetch Data Cache at all, so this goes
-// through cachedFetch like everything else here - keyed by the week it
-// covers, which changes on its own once a new week starts, well before the
-// 1h TTL would've expired it anyway.
+// requests aren't eligible for Next's fetch Data Cache at all, so both
+// callers below go through cachedFetch instead, each with its own key
+// (chosen so the cache rotates on its own rather than growing unbounded -
+// see the comment on each caller).
+async function fetchStepsRollup(accessToken: string, start: Date, end: Date): Promise<Map<string, number>> {
+  const res = await fetch("https://health.googleapis.com/v4/users/me/dataTypes/steps/dataPoints:dailyRollUp", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      range: { start: { date: toCivilDate(start) }, end: { date: toCivilDate(end) } },
+      windowSizeDays: 1,
+    }),
+  });
+
+  if (!res.ok) {
+    console.error(`[fitbit] steps dailyRollUp failed: ${res.status} ${await res.text()}`);
+    if (res.status === 429) throw new Error("rate-limited");
+    return new Map();
+  }
+
+  const json = await res.json();
+  const points = (json.rollupDataPoints ?? []) as StepsRollupPoint[];
+  return new Map(points.map((p) => [civilDateStr(p.civilStartTime.date, ""), Number(p.steps?.countSum ?? 0)]));
+}
+
+// The API only returns rows for days it has data for, so gaps (including
+// today, before it's finished) are just absent from `byDate` - pad out to
+// every civil date in [start, end) so callers always get one entry per day.
+function padDailySteps(start: Date, end: Date, byDate: Map<string, number>): StepsWeek {
+  const days = Math.round((end.getTime() - start.getTime()) / 86400000);
+  return Array.from({ length: days }, (_, i) => {
+    const day = new Date(start);
+    day.setDate(start.getDate() + i);
+    const dateTime = civilDateStr(toCivilDate(day), "");
+    return { dateTime, value: byDate.get(dateTime) ?? 0 };
+  });
+}
+
+// Mon..Sun of the current week, for the "Steps (this week)" stat card and
+// its StepRings visual - both assume exactly 7 entries, so this stays fixed
+// regardless of the range selector (unlike queryStepsHistory below).
 async function querySteps(accessToken: string): Promise<StepsWeek> {
   const start = startOfWeek(new Date());
   const key = civilDateStr(toCivilDate(start), "");
@@ -93,51 +130,86 @@ async function querySteps(accessToken: string): Promise<StepsWeek> {
   return cachedFetch(`fitbit:steps:${key}`, REVALIDATE_SECONDS, async () => {
     const end = new Date(start);
     end.setDate(start.getDate() + 7); // exclusive - covers Mon..Sun of this week
-
-    const res = await fetch("https://health.googleapis.com/v4/users/me/dataTypes/steps/dataPoints:dailyRollUp", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        range: { start: { date: toCivilDate(start) }, end: { date: toCivilDate(end) } },
-        windowSizeDays: 1,
-      }),
-    });
-
-    if (!res.ok) {
-      console.error(`[fitbit] steps dailyRollUp failed: ${res.status} ${await res.text()}`);
-      if (res.status === 429) throw new Error("rate-limited");
-      return [];
-    }
-
-    const json = await res.json();
-    const points = (json.rollupDataPoints ?? []) as StepsRollupPoint[];
-    const byDate = new Map(points.map((p) => [civilDateStr(p.civilStartTime.date, ""), Number(p.steps?.countSum ?? 0)]));
-
-    // The API only returns rows for days it has data for, so today's future
-    // days (and any gaps) are just absent - pad out to all 7 civil dates of
-    // the week so callers (StepRings) always get one entry per day, Mon..Sun.
-    return Array.from({ length: 7 }, (_, i) => {
-      const day = new Date(start);
-      day.setDate(start.getDate() + i);
-      const dateTime = civilDateStr(toCivilDate(day), "");
-      return { dateTime, value: byDate.get(dateTime) ?? 0 };
-    });
+    const byDate = await fetchStepsRollup(accessToken, start, end);
+    return padDailySteps(start, end, byDate);
   });
+}
+
+// Comfortably covers the range selector's longest option (1Y) - same
+// "one generously sized window, no per-range refetching" approach as
+// MEASUREMENT_PAGE_SIZE above, rather than a separate upstream call (and
+// cache key) per range-selector button.
+const STEPS_HISTORY_WINDOW_DAYS = 400;
+
+// dailyRollUp hard-caps how much duration a single query can cover - a wider
+// request 400s with INVALID_ROLLUP_QUERY_DURATION ("must not exceed 90 days
+// for steps"). Split the full window into <=90-day chunks and fetch them in
+// parallel instead.
+const STEPS_ROLLUP_MAX_DAYS = 90;
+
+function chunkRange(start: Date, end: Date, maxDays: number): Array<[Date, Date]> {
+  const chunks: Array<[Date, Date]> = [];
+  let chunkStart = new Date(start);
+  while (chunkStart < end) {
+    const chunkEnd = new Date(chunkStart);
+    chunkEnd.setDate(chunkEnd.getDate() + maxDays);
+    if (chunkEnd > end) chunkEnd.setTime(end.getTime());
+    chunks.push([chunkStart, chunkEnd]);
+    chunkStart = chunkEnd;
+  }
+  return chunks;
+}
+
+// Daily steps for the trend chart, filtered down to the same cutoff as
+// weight/fat - so the range selector controls steps history too, instead of
+// it being stuck on the current week like the stat card above.
+async function queryStepsHistory(accessToken: string, cutoff: Date): Promise<StepsWeek> {
+  const end = new Date();
+  end.setHours(0, 0, 0, 0);
+  end.setDate(end.getDate() + 1); // exclusive - include today
+  const start = new Date(end);
+  start.setDate(start.getDate() - STEPS_HISTORY_WINDOW_DAYS);
+
+  // Keyed by day rather than by cutoff: one cache entry that rotates once a
+  // day regardless of which range-selector button is active, instead of a
+  // separate stale entry per button.
+  const key = civilDateStr(toCivilDate(end), "");
+
+  const all = await cachedFetch(`fitbit:steps:history:${key}`, REVALIDATE_SECONDS, async () => {
+    const chunks = chunkRange(start, end, STEPS_ROLLUP_MAX_DAYS);
+    const maps = await Promise.all(chunks.map(([chunkStart, chunkEnd]) => fetchStepsRollup(accessToken, chunkStart, chunkEnd)));
+    const byDate = new Map<string, number>();
+    for (const map of maps) for (const [date, value] of map) byDate.set(date, value);
+    return padDailySteps(start, end, byDate);
+  });
+
+  return all.filter((p) => new Date(`${p.dateTime}T00:00:00`) >= cutoff);
 }
 
 export async function GET(req: NextRequest) {
   const delta = Number(req.nextUrl.searchParams.get("time_delta") ?? 29);
-  const cutoff = new Date(Date.now() - delta * 86400000);
+
+  // Midnight-anchored rather than an exact "now minus N days" timestamp -
+  // queryStepsHistory compares against each day's local midnight, so an
+  // exact-timestamp cutoff (whatever time of day "now" happens to be) drifts
+  // the two series' start dates apart by up to a day depending on when this
+  // route runs. Anchoring both to the same calendar-day boundary keeps
+  // weight/fat and steps plotted over an identical range.
+  const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setDate(cutoff.getDate() - delta);
 
   let weight: Array<{ dateTime: string; value: number | null }>;
   let fat: Array<{ dateTime: string; value: number | null }>;
   let steps: Array<{ dateTime: string; value: number }>;
+  let stepsHistory: Array<{ dateTime: string; value: number }>;
   try {
     const accessToken = await getAccessToken();
-    [weight, fat, steps] = await Promise.all([
+    [weight, fat, steps, stepsHistory] = await Promise.all([
       queryMeasurement("weight", accessToken, cutoff),
       queryMeasurement("body-fat", accessToken, cutoff),
       querySteps(accessToken),
+      queryStepsHistory(accessToken, cutoff),
     ]);
   } catch (err) {
     // Surface rate-limiting vs. invalid/expired credentials distinctly - both
@@ -153,5 +225,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "rate-limited" }, { status: 429 });
   }
 
-  return NextResponse.json({ weight, fat, steps });
+  return NextResponse.json({ weight, fat, steps, stepsHistory });
 }

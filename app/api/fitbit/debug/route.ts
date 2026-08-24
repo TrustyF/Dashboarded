@@ -9,6 +9,11 @@ import { getAccessToken, toCivilDate, civilDateStr, startOfWeek, TOKEN_PATH } fr
 // whatever's sitting in the TTL cache - and reports each stage (clock/TZ,
 // token file, token exchange, upstream call) separately so a failure in one
 // doesn't hide whether the others are fine.
+//
+// ?probe_days=N adds a second live probe against a full N-day dailyRollUp
+// range - this is what caught dailyRollUp's undocumented-in-app 90-day
+// window cap (INVALID_ROLLUP_QUERY_DURATION) that queryStepsHistory's
+// chunking now works around.
 
 async function tokenFileStatus() {
   try {
@@ -24,7 +29,9 @@ async function tokenFileStatus() {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const probeDays = Number(new URL(req.url).searchParams.get("probe_days") ?? 0);
+
   const now = new Date();
   const start = startOfWeek(now);
   const end = new Date(start);
@@ -96,6 +103,42 @@ export async function GET() {
     }
   }
 
+  let longProbe: Record<string, unknown> = { ran: false };
+  if (accessToken && probeDays > 0) {
+    const longEnd = new Date();
+    longEnd.setHours(0, 0, 0, 0);
+    longEnd.setDate(longEnd.getDate() + 1);
+    const longStart = new Date(longEnd);
+    longStart.setDate(longStart.getDate() - probeDays);
+
+    try {
+      const res = await fetch("https://health.googleapis.com/v4/users/me/dataTypes/steps/dataPoints:dailyRollUp", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          range: { start: { date: toCivilDate(longStart) }, end: { date: toCivilDate(longEnd) } },
+          windowSizeDays: 1,
+        }),
+      });
+      const bodyText = await res.text();
+      longProbe = {
+        ran: true,
+        requestedRange: { start: toCivilDate(longStart), end: toCivilDate(longEnd) },
+        status: res.status,
+        ok: res.ok,
+        body: (() => {
+          try {
+            return JSON.parse(bodyText);
+          } catch {
+            return bodyText.slice(0, 2000);
+          }
+        })(),
+      };
+    } catch (err) {
+      longProbe = { ran: true, ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
   return NextResponse.json({
     time,
     week,
@@ -103,5 +146,6 @@ export async function GET() {
     tokenFile,
     accessToken: { ok: accessToken !== null, error: accessTokenError },
     liveStepsProbe: liveProbe,
+    longProbe,
   });
 }

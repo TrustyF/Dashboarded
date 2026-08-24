@@ -12,7 +12,12 @@ import StatCard from "@/components/stats/StatCard";
 import StatCardShell from "@/components/stats/StatCardShell";
 import StepRings, {STEPS_GOAL} from "@/components/stats/StepRings";
 import {STAT_COLORS} from "@/lib/stat-colors";
+import {movingAverageNullable} from "@/lib/moving-average";
 import styles from "./HomeView.module.sass";
+
+// Same 5-reading window as SensorHistoryChart.tsx (50s either side of noise
+// without smearing out real swings, at poll.py's 10s poll interval).
+const SENSOR_SMOOTHING_WINDOW_READINGS = 10;
 
 // Home screen, restyled onto the same stat-tile/shell layout as
 // app/weather/WeatherView.tsx instead of the original bespoke clock/weather/calendar
@@ -23,6 +28,12 @@ export default function HomeView() {
     const {data: events} = useCalendar();
     const {data: sensor} = useSensorHistory();
     const {data: fitbit} = useFitbit();
+
+    const smoothIndoorTemp = movingAverageNullable(sensor?.temp ?? [], SENSOR_SMOOTHING_WINDOW_READINGS);
+    const smoothIndoorTempLatest = smoothIndoorTemp.at(-1);
+    // Averaging readings that are already rounded to 1 decimal can produce a
+    // long trailing decimal (e.g. 22.343333) - round back down for display.
+    const indoorTempValue = smoothIndoorTempLatest != null ? Math.round(smoothIndoorTempLatest * 10) / 10 : null;
 
     const current = weather?.current;
     const hourly = weather?.hourly;
@@ -88,13 +99,12 @@ export default function HomeView() {
 
                     <StatCard
                         label="Indoor"
-                        value={sensor?.temp?.at(-1) ?? null}
+                        value={indoorTempValue}
                         valueSize={1.5}
-
                         unit="°"
-                        diff={netChange(sensor?.temp)}
+                        diff={netChange(smoothIndoorTemp)}
                         color={STAT_COLORS.indoor}
-                        sparkline={sensor?.temp ?? []}
+                        sparkline={smoothIndoorTemp}
                         goodDirection="neutral"
                     />
                     <StatCard
