@@ -58,6 +58,10 @@ const RAIN_EDGE_ALPHA = 0;
 const RAIN_SMOOTHING_WINDOW_HOURS = 3;
 // Same idea, applied to the Temp line's hourly readings.
 const TEMP_SMOOTHING_WINDOW_HOURS = 3;
+// Temp line's color gradient is pinned to these absolute degrees (not the
+// current week's min/max) - blue at/under 10°, red at/over 30°.
+const TEMP_GRADIENT_MIN_C = 5;
+const TEMP_GRADIENT_MAX_C = 30;
 function rainAlpha(mm: number): number {
   const t = Math.min(mm / RAIN_MAX_MM_PER_HOUR, 1);
   return RAIN_MIN_ALPHA + t * (RAIN_MAX_ALPHA - RAIN_MIN_ALPHA);
@@ -303,7 +307,7 @@ export default function DailyTempChart({
   ];
 
   const yAxis: Record<string, unknown>[] = [
-    { type: "value", scale: true, axisLabel: { formatter: "{value}°" } },
+    { type: "value", min: 0, max: 30, axisLabel: { formatter: "{value}°" } },
   ];
 
   // if (sunshineHours) {
@@ -371,9 +375,16 @@ export default function DailyTempChart({
           show: false,
           seriesIndex: 0,
           dimension: 1,
-          min: Math.min(...realTempPoints.map((p) => p[1])),
-          max: Math.max(...realTempPoints.map((p) => p[1])),
+          // Pinned to absolute degrees rather than this week's min/max, so a
+          // 20° line always reads the same color regardless of how hot or
+          // cold the rest of the forecast is - a mild day and a heatwave
+          // don't both get stretched to the same red/blue extremes.
+          min: TEMP_GRADIENT_MIN_C,
+          max: TEMP_GRADIENT_MAX_C,
           inRange: { color: ["#5b9bd5", "#3fb8af", "#e8c15a", "#e0703f"] },
+          // Readings outside [min, max] clamp to the nearest endpoint color
+          // instead of ECharts' default (transparent) out-of-range styling.
+          outOfRange: { color: ["#5b9bd5", "#e0703f"] },
         },
         series: withEaseOutAnimation(withNoInteraction(series)),
       }}
