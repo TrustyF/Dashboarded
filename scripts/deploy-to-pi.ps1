@@ -7,12 +7,20 @@
   .\scripts\deploy-to-pi.ps1
   .\scripts\deploy-to-pi.ps1 -SkipApp              # only rebuild sensor-poller
   .\scripts\deploy-to-pi.ps1 -PiHost pi@192.168.1.50 -PiPath /home/pi/dashboarded
+  .\scripts\deploy-to-pi.ps1 -SyncTokens           # also push ./data/tokens/* after a bootstrap-tokens run
 #>
 param(
     [string]$PiHost = "arthur@dashboard",
     [string]$PiPath = "~/dashboarded",
     [switch]$SkipApp,
-    [switch]$SkipSensorPoller
+    [switch]$SkipSensorPoller,
+    # Opt-in, not automatic: data/tokens/.spotify_cache gets rewritten in
+    # place by the running container on every access-token refresh (see
+    # bootstrap-tokens.mjs), so syncing it on every routine deploy would
+    # clobber a live-refreshed token with a stale local copy. Only pass this
+    # right after running `npm run bootstrap-tokens` for a service that
+    # actually needs re-authing.
+    [switch]$SyncTokens
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,36 +72,70 @@ if (-not $SkipSensorPoller) {
     $tarNames += "dashboard-sensor-poller.tar"
 }
 
-if ($tarNames.Count -eq 0) {
-    Write-Host "Nothing to deploy (both -SkipApp and -SkipSensorPoller set)."
+if ($tarNames.Count -eq 0 -and -not $SyncTokens) {
+    Write-Host "Nothing to deploy (both -SkipApp and -SkipSensorPoller set, and -SyncTokens not given)."
     exit 0
-}
-
-# .env.local.production isn't in git (real secrets - see .gitignore); the old
-# GitHub Actions workflow used to re-copy it from ~/secrets/dashboarded/ into
-# place on every CI run. Now that builds/deploys happen from here instead,
-# this script is what keeps the Pi's copy in sync - `docker compose up`
-# requires this file to exist (it's the app service's env_file).
-$envFile = Join-Path $repoRoot ".env.local.production"
-if (-not (Test-Path $envFile)) {
-    throw ".env.local.production not found at $envFile - the Pi's app container needs this (env_file in docker-compose.yml). Restore it before deploying."
 }
 
 ssh $PiHost "mkdir -p $PiPath"
 Invoke-Native "mkdir -p $PiPath on the Pi"
 
-Write-Host "Copying image(s), docker-compose.yml, and .env.local.production to ${PiHost}:${PiPath} ..."
-foreach ($tarName in $tarNames) {
-    Copy-ToPi (Join-Path $tmpDir $tarName) $PiPath
-}
-Copy-ToPi (Join-Path $repoRoot "docker-compose.yml") $PiPath
-Copy-ToPi $envFile $PiPath
+if ($tarNames.Count -gt 0) {
+    # .env.local.production isn't in git (real secrets - see .gitignore); the
+    # old GitHub Actions workflow used to re-copy it from
+    # ~/secrets/dashboarded/ into place on every CI run. Now that
+    # builds/deploys happen from here instead, this script is what keeps the
+    # Pi's copy in sync - `docker compose up` requires this file to exist
+    # (it's the app service's env_file).
+    $envFile = Join-Path $repoRoot ".env.local.production"
+    if (-not (Test-Path $envFile)) {
+        throw ".env.local.production not found at $envFile - the Pi's app container needs this (env_file in docker-compose.yml). Restore it before deploying."
+    }
 
-Write-Host "Loading image(s) and restarting containers on the Pi..."
-$loadCmds = ($tarNames | ForEach-Object { "docker load -i $_" }) -join " && "
-$rmCmds = ($tarNames | ForEach-Object { "rm -f $_" }) -join " && "
-ssh $PiHost "cd $PiPath && $loadCmds && $rmCmds && docker compose up -d"
-Invoke-Native "ssh deploy step"
+    Write-Host "Copying image(s), docker-compose.yml, and .env.local.production to ${PiHost}:${PiPath} ..."
+    foreach ($tarName in $tarNames) {
+        Copy-ToPi (Join-Path $tmpDir $tarName) $PiPath
+    }
+    Copy-ToPi (Join-Path $repoRoot "docker-compose.yml") $PiPath
+    Copy-ToPi $envFile $PiPath
+
+    Write-Host "Loading image(s) and restarting containers on the Pi..."
+    $loadCmds = ($tarNames | ForEach-Object { "docker load -i $_" }) -join " && "
+    $rmCmds = ($tarNames | ForEach-Object { "rm -f $_" }) -join " && "
+    ssh $PiHost "cd $PiPath && $loadCmds && $rmCmds && docker compose up -d"
+    Invoke-Native "ssh deploy step"
+} else {
+    Write-Host "Skipping image build/deploy (-SkipApp -SkipSensorPoller) - syncing tokens against whatever is already running on the Pi."
+}
+
+if ($SyncTokens) {
+    $localTokenDir = Join-Path $repoRoot "data\tokens"
+    $tokenFiles = Get-ChildItem $localTokenDir -File -ErrorAction SilentlyContinue
+    if (-not $tokenFiles) {
+        Write-Host "SyncTokens: no files under $localTokenDir - nothing to sync."
+    } else {
+        Write-Host "Syncing $($tokenFiles.Count) token file(s) into the dashboard-tokens volume..."
+        foreach ($file in $tokenFiles) {
+            Copy-ToPi $file.FullName $PiPath
+        }
+        # Copy from the Pi's home path into the volume via the running
+        # container, one file at a time (mirrors Copy-ToPi's reasoning above -
+        # keeps remote-side quoting simple), then remove the transient copies
+        # left in $PiPath. `docker compose cp` always writes as root inside
+        # the container - fine for the read-only Google/Fitbit tokens, but
+        # .spotify_cache needs to stay world-writable (0666) so the
+        # container's non-root nextjs user can keep rewriting it in place, so
+        # that one file gets an explicit chmod back afterward.
+        $copyCmds = ($tokenFiles | ForEach-Object { "docker compose cp `"$($_.Name)`" app:/data/tokens/`"$($_.Name)`"" }) -join " && "
+        $cleanupCmds = ($tokenFiles | ForEach-Object { "rm -f `"$($_.Name)`"" }) -join " && "
+        # -u root: the container's default user (non-root nextjs) can't chmod
+        # a file it doesn't own - docker compose cp above wrote it as root.
+        $chmodCmd = if ($tokenFiles.Name -contains ".spotify_cache") { "&& docker compose exec -T -u root app chmod 666 /data/tokens/.spotify_cache" } else { "" }
+        ssh $PiHost "cd $PiPath && $copyCmds $chmodCmd && $cleanupCmds"
+        Invoke-Native "token sync"
+        Write-Host "Token sync done."
+    }
+}
 
 if (-not $SkipApp) {
     # The kiosk's chromium tab (pi-setup/labwc-autostart) was already open

@@ -39,9 +39,9 @@ export default function HomeView() {
     const hourly = weather?.hourly;
     const daily = weather?.daily;
 
-    // Same "nearest 2 hours of forecast" window as the weather page's stat
+    // Same "nearest 4 hours of forecast" window as the weather page's stat
     // cards - see app/weather/WeatherView.tsx for why this isn't a history window.
-    const nextTwoHours = <T, >(arr: T[] | undefined) => (arr ?? []).slice(0, 4);
+    const nextFourHours = <T, >(arr: T[] | undefined) => (arr ?? []).slice(0, 5);
 
     const [conditionTitle, conditionIcon] = CODE_MAP[current?.weather_code ?? 999] ?? CODE_MAP[999];
     const conditionIconSrc = conditionIcon !== "undefined" ? `/assets/weather/icons/v1/${conditionIcon}.png` : undefined;
@@ -91,9 +91,9 @@ export default function HomeView() {
                         value={current?.temperature_2m != null ? Math.round(current.temperature_2m) : null}
                         valueSize={1.5}
                         unit="°"
-                        diff={netChange(nextTwoHours(hourly?.temperature_2m))}
+                        diff={netChange(nextFourHours(hourly?.temperature_2m))}
                         color={STAT_COLORS.temperature}
-                        sparkline={nextTwoHours(hourly?.temperature_2m)}
+                        sparkline={nextFourHours(hourly?.temperature_2m)}
                         goodDirection="neutral"
                     />
 
@@ -113,9 +113,9 @@ export default function HomeView() {
                         valueSize={1.5}
                         unit={uvCategory(uvIndex) ?? ""}
                         diffUnit=""
-                        diff={netChange(nextTwoHours(hourly?.uv_index))}
+                        diff={netChange(nextFourHours(hourly?.uv_index))}
                         color={STAT_COLORS.uvIndex}
-                        sparkline={nextTwoHours(hourly?.uv_index)}
+                        sparkline={nextFourHours(hourly?.uv_index)}
                         goodDirection="neutral"
                         icon={uvIcon(uvIndex)}
                         iconAlt={uvCategory(uvIndex)}
@@ -126,9 +126,9 @@ export default function HomeView() {
                         value={current?.precipitation ?? null}
                         valueSize={1.5}
                         unit="mm"
-                        diff={netChange(nextTwoHours(hourly?.precipitation))}
+                        diff={netChange(nextFourHours(hourly?.precipitation))}
                         color={STAT_COLORS.precipitation}
-                        sparkline={nextTwoHours(hourly?.precipitation)}
+                        sparkline={nextFourHours(hourly?.precipitation)}
                         goodDirection="neutral"
                     />
                 </div>

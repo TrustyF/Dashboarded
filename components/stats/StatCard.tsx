@@ -22,6 +22,7 @@ type Props = {
   sparkline: (number | null)[];
   sparklineMin?: number;
   sparklineMax?: number;
+  sparklinePoints?: boolean;
   goodDirection?: "down" | "up" | "neutral";
   icon?: string;
   iconAlt?: string;
@@ -52,6 +53,7 @@ export default function StatCard({
   sparkline,
   sparklineMin,
   sparklineMax,
+  sparklinePoints,
   goodDirection,
   icon,
   iconAlt,
@@ -68,7 +70,9 @@ export default function StatCard({
       )}
       <DiffPill value={diff} unit={diffUnit ?? unit} goodDirection={goodDirection} />
       <div className={styles.trend}>
-        {visual ?? <Sparkline data={sparkline} color={color} min={sparklineMin} max={sparklineMax} />}
+        {visual ?? (
+          <Sparkline data={sparkline} color={color} min={sparklineMin} max={sparklineMax} showPoints={sparklinePoints} />
+        )}
       </div>
     </StatCardShell>
   );

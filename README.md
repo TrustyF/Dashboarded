@@ -97,6 +97,9 @@ journalctl -b | grep -iE 'labwc|chromium'
    ```
    This writes the token files under `./data/tokens/` (reads client IDs/secrets and
    `*_TOKEN_PATH` from `.env`). For the Pi: copy that folder's contents into the
-   `dashboard-tokens` volume (e.g. `docker compose cp data/tokens/. app:/data/tokens/`
-   after first `up`, or `scp` them onto the host path the volume maps to) - you don't
-   need to repeat the browser flow there.
+   `dashboard-tokens` volume - either `.\scripts\deploy-to-pi.ps1 -SyncTokens`, or
+   manually with `docker compose cp data/tokens/. app:/data/tokens/` after first `up`
+   - you don't need to repeat the browser flow there. `-SyncTokens` is opt-in and not
+   part of a routine deploy: pass it only right after a bootstrap-tokens run, since it
+   would otherwise overwrite `.spotify_cache` (which the running container keeps
+   rewriting in place with refreshed tokens) with your stale local copy.

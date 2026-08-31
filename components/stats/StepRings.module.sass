@@ -1,5 +1,3 @@
-@use "../../app/variables" as v
-
 .row
   display: flex
   justify-content: space-between
@@ -18,22 +16,3 @@
   font-weight: 500
   opacity: 0.6
   text-transform: uppercase
-
-// --start-offset/--target-offset are set per-ring inline (StepRings.tsx),
-// since each day's fill percentage differs - the keyframe itself stays
-// shared across every ring via those custom properties.
-@keyframes fillRing
-  from
-    stroke-dashoffset: var(--start-offset)
-  to
-    stroke-dashoffset: var(--target-offset)
-
-.progress
-  // Delayed by the page-slide duration (app/_variables.sass'
-  // $nav-transition-ms) so the ring starts filling once the page has
-  // actually arrived, not underneath the still-sliding-in page. `both`
-  // (not just `forwards`) holds the *first* keyframe - a fully empty ring -
-  // for the delay too, otherwise the circle would sit at its unanimated
-  // default (fully filled) until the delay elapses, then visibly jump back
-  // to empty right as the animation starts.
-  animation: fillRing 800ms ease-out #{v.$nav-transition-ms}ms both

@@ -32,11 +32,11 @@ export default function WeatherView() {
   const [conditionTitle, conditionIcon] = CODE_MAP[current.weather_code] ?? CODE_MAP[999];
   const conditionIconSrc = conditionIcon !== "undefined" ? `/assets/weather/icons/v1/${conditionIcon}.png` : undefined;
 
-  // hourly.* is forward-looking only (forecast, not history), so "last 2
-  // hours" for the stat cards means the nearest 2 hours of forecast - the
-  // first 3 points (now, +1h, +2h) - rather than the full 12h window used by
+  // hourly.* is forward-looking only (forecast, not history), so "next 4
+  // hours" for the stat cards means the nearest 4 hours of forecast - the
+  // first 5 points (now, +1h..+4h) - rather than the full 12h window used by
   // the trend chart below.
-  const nextTwoHours = <T,>(arr: T[]) => arr.slice(0, 4);
+  const nextFourHours = <T,>(arr: T[]) => arr.slice(0, 5);
 
   // Skip the precipitation line entirely when nothing meaningful is forecast -
   // a flat line hugging 0 (or lost in float noise) is just visual clutter.
@@ -50,9 +50,9 @@ export default function WeatherView() {
           label="Temperature"
           value={Math.round(current.temperature_2m)}
           unit="°"
-          diff={netChange(nextTwoHours(hourly.temperature_2m))}
+          diff={netChange(nextFourHours(hourly.temperature_2m))}
           color={STAT_COLORS.temperature}
-          sparkline={nextTwoHours(hourly.temperature_2m)}
+          sparkline={nextFourHours(hourly.temperature_2m)}
           goodDirection="neutral"
         />
         <StatCard
@@ -60,9 +60,9 @@ export default function WeatherView() {
           value={uvIndex}
           unit={uvCategory(uvIndex) ?? ""}
           diffUnit=""
-          diff={netChange(nextTwoHours(hourly.uv_index))}
+          diff={netChange(nextFourHours(hourly.uv_index))}
           color={STAT_COLORS.uvIndex}
-          sparkline={nextTwoHours(hourly.uv_index)}
+          sparkline={nextFourHours(hourly.uv_index)}
           goodDirection="neutral"
           icon={uvIcon(uvIndex)}
           iconAlt={uvCategory(uvIndex)}
@@ -71,9 +71,9 @@ export default function WeatherView() {
           label="Precipitation"
           value={current.precipitation}
           unit="mm"
-          diff={netChange(nextTwoHours(hourly.precipitation))}
+          diff={netChange(nextFourHours(hourly.precipitation))}
           color={STAT_COLORS.precipitation}
-          sparkline={nextTwoHours(hourly.precipitation)}
+          sparkline={nextFourHours(hourly.precipitation)}
           goodDirection="neutral"
         />
         <StatCard

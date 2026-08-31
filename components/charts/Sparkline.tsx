@@ -16,11 +16,12 @@ type Props = {
   color: string;
   min?: number;
   max?: number;
+  showPoints?: boolean;
 };
 
 // Minimal axis-less trend line for a stat card - no grid, no tooltip, no
 // interaction chrome, just the shape of the trend in the metric's color.
-export default function Sparkline({ data, color, min, max }: Props) {
+export default function Sparkline({ data, color, min, max, showPoints = false }: Props) {
   // The wrapper reserves the chart's footprint immediately, so gating the
   // chart itself behind useChartMountSettled (see lib/echarts-setup.ts)
   // doesn't cause a layout shift once it mounts a couple frames later.
@@ -47,7 +48,9 @@ export default function Sparkline({ data, color, min, max }: Props) {
                 {
                   type: "line",
                   data,
-                  showSymbol: false,
+                  showSymbol: showPoints,
+                  symbolSize: 5,
+                  itemStyle: { color },
                   smooth: 0.3,
                   connectNulls: true,
                   lineStyle: { width: 2, color },
