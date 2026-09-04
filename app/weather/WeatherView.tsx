@@ -77,6 +77,15 @@ export default function WeatherView() {
           goodDirection="neutral"
         />
         <StatCard
+          label="Cloud Cover"
+          value={Math.round(current.cloud_cover)}
+          unit="%"
+          diff={netChange(nextFourHours(hourly.cloud_cover))}
+          color={STAT_COLORS.cloudCover}
+          sparkline={nextFourHours(hourly.cloud_cover)}
+          goodDirection="neutral"
+        />
+        <StatCard
           label="Indoor"
           value={sensor?.temp?.at(-1) ?? null}
           unit="°"
