@@ -9,7 +9,11 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const BRIGHTNESS_STEPS = [5, 30, 50, 100];
 let index = 1; // starts at brightness_array[1] === 30 in the original... actually
-// original called set_brightness(100) in __init__ regardless of index; mirror that:
+// original called set_brightness(100) in __init__ regardless of index; mirrored
+// here as an assumption rather than a real command (this route doesn't own
+// process startup the way the old Flask app's __init__ did) - the actual
+// enforcement lives in pi-setup/labwc-autostart's own `brightnessctl set 100%`,
+// which runs unconditionally on every boot before this server is even reachable.
 let currentBrightness = 100;
 
 async function setBrightness(pct: number) {

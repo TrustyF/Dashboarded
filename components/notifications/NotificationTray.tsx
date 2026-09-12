@@ -39,8 +39,8 @@ export default function NotificationTray() {
 
             {current && (
                 <button type="button" className={styles.overlay} onClick={() => dismiss(current.id)}>
+                    <i className={`bi ${current.icon} ${styles.icon}`}/>
                     {current.value && <div className={styles.value}>
-                        <i className={`bi ${current.icon} ${styles.icon}`}/>
                         {current.value}</div>}
                     <span className={styles.message}>{current.message}</span>
                 </button>

@@ -13,6 +13,16 @@ for i in $(seq 1 20); do
   sleep 0.5
 done
 
+# The backlight's sysfs value persists across reboots as whatever it was
+# last set to (e.g. from a previous toggle-brightness tap) - it doesn't
+# reset to full on its own. app/api/settings/toggle-brightness/route.ts's
+# in-memory currentBrightness assumes 100% at startup but never actually
+# issues this command, so without it the app's displayed brightness can
+# silently disagree with the real screen. Best-effort: brightnessctl's
+# backlight driver is normally available this early, but this shouldn't
+# block boot if it isn't.
+brightnessctl set 100% || true
+
 # Wait for the app container to actually be serving before Chromium tries
 # to load it - Chromium doesn't retry a failed page load on its own.
 /usr/local/bin/wait-for-dashboard.sh
