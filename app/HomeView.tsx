@@ -52,7 +52,7 @@ export default function HomeView() {
     // line - below this it's float noise, not weather. When nothing's
     // falling now or in the next 4h, the precipitation card is dead space,
     // so show cloud cover instead.
-    const upcomingPrecipitation = nextFourHours(hourly?.precipitation);
+    const upcomingPrecipitation = nextFourHours<number | null>(hourly?.precipitation);
     const hasPrecipitation =
         (current?.precipitation ?? 0) > 0.1 ||
         upcomingPrecipitation.some((v: number | null) => v != null && v > 0.1);
@@ -67,7 +67,7 @@ export default function HomeView() {
             <div className={styles.statGrid}>
 
                 <StatCardShell className={styles.clockCard}>
-                    <Clock size={1.1}/>
+                    <Clock size={1}/>
                 </StatCardShell>
 
                 <StatCardShell className={styles.weatherCard}>

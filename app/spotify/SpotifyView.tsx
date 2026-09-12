@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useSpotifyNowPlaying } from "@/lib/hooks";
+import { useActiveView } from "@/lib/active-view";
 import ProgressBar from "./ProgressBar";
 import { useDeferredImageUrl } from "./useDeferredImageUrl";
 import { useCrossfadeLayers } from "./useCrossfadeLayers";
@@ -26,6 +28,27 @@ function formatDuration(ms: number) {
 
 export default function SpotifyView() {
   const { track, progressMs, error, notches } = useSpotifyNowPlaying();
+  const { setActiveView } = useActiveView();
+
+  // Views mount once and poll forever in the background regardless of which
+  // one is visible (see ViewHost.tsx), so this fires even while some other
+  // page is on screen. Only the two edges of a listening session trigger a
+  // switch - nothing-playing -> playing goes to Spotify, playing -> nothing
+  // goes back home - skipping to the next track mid-session is neither edge,
+  // so it's a no-op here; otherwise navigating away to check another page
+  // during an ongoing session would just get yanked right back at the next
+  // track change. `undefined` (vs. `null`) tracks "haven't seen the first
+  // poll yet" so booting the app doesn't itself count as either edge.
+  const lastTrackId = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const id = track?.id ?? null;
+    if (lastTrackId.current === null && id !== null) {
+      setActiveView("/spotify");
+    } else if (lastTrackId.current != null && id === null) {
+      setActiveView("/");
+    }
+    lastTrackId.current = id;
+  }, [track?.id, setActiveView]);
 
   const rawArtUrl = track?.album.images[1]?.url ?? track?.album.images[0]?.url;
   // Only fires the crossfade once the new art has actually finished loading
