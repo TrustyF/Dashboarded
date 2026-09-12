@@ -2,7 +2,7 @@ import styles from "./DiffPill.module.sass";
 
 type Props = {
   value: number | null;
-  unit: string;
+  unit?: string | null;
   // Whether a decrease counts as improvement (weight/fat/BMI) vs an increase
   // (weight loss framing) - "neutral" skips the green/red judgment entirely
   // for metrics where up/down isn't good or bad (e.g. weather trends).

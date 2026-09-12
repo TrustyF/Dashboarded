@@ -131,7 +131,7 @@ export default function CalendarGrid({ events }: { events: CalendarEvent[] }) {
 
   return (
     <div className={styles.wrapper}>
-      <h1>{today.toLocaleString("en-GB", { year: "numeric", month: "long", day: "2-digit" })}</h1>
+      <h1>{today.toLocaleString("en-GB", { year: "numeric", month: "short", day: "2-digit" })}</h1>
       <div className={styles.gridArea} ref={ref}>
         {cell > 0 && (
           <div className={styles.grid} style={{ gap: GAP }}>

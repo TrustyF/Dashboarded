@@ -2,7 +2,7 @@ import styles from "./NumberUnit.module.sass";
 
 type Props = {
   value: React.ReactNode;
-  unit?: string;
+  unit?: string | null;
   // Scales the whole thing relative to `baseSize` - same --size-variable
   // convention as Clock/WeatherSummary.
   size?: number;

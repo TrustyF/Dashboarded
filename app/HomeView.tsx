@@ -48,6 +48,15 @@ export default function HomeView() {
 
     const uvIndex = current?.uv_index != null ? Math.round(current.uv_index) : null;
 
+    // Same "negligible" threshold as WeatherView's daily-chart precipitation
+    // line - below this it's float noise, not weather. When nothing's
+    // falling now or in the next 4h, the precipitation card is dead space,
+    // so show cloud cover instead.
+    const upcomingPrecipitation = nextFourHours(hourly?.precipitation);
+    const hasPrecipitation =
+        (current?.precipitation ?? 0) > 0.1 ||
+        upcomingPrecipitation.some((v: number | null) => v != null && v > 0.1);
+
     // daily.* is index-0-is-today, same convention app/weather/WeatherView.tsx's
     // DailyTempChart relies on.
     const todayHigh = daily?.temperature_2m_max?.[0];
@@ -61,9 +70,9 @@ export default function HomeView() {
                     <Clock size={1.1}/>
                 </StatCardShell>
 
-                <StatCardShell label="Today" className={styles.weatherCard}>
+                <StatCardShell className={styles.weatherCard}>
                     <WeatherSummary
-                        size={0.6}
+                        size={0.9}
                         temperature={todayHigh != null ? Math.round(todayHigh) : 0}
                         weatherCode={todayCode}
                     />
@@ -111,7 +120,6 @@ export default function HomeView() {
                         label="UV Index"
                         value={uvIndex}
                         valueSize={1.5}
-                        unit={uvCategory(uvIndex) ?? ""}
                         diffUnit=""
                         diff={netChange(nextFourHours(hourly?.uv_index))}
                         color={STAT_COLORS.uvIndex}
@@ -121,16 +129,29 @@ export default function HomeView() {
                         iconAlt={uvCategory(uvIndex)}
                     />
 
-                    <StatCard
-                        label="Precipitation"
-                        value={current?.precipitation ?? null}
-                        valueSize={1.5}
-                        unit="mm"
-                        diff={netChange(nextFourHours(hourly?.precipitation))}
-                        color={STAT_COLORS.precipitation}
-                        sparkline={nextFourHours(hourly?.precipitation)}
-                        goodDirection="neutral"
-                    />
+                    {hasPrecipitation ? (
+                        <StatCard
+                            label="Precipitation"
+                            value={current?.precipitation ?? null}
+                            valueSize={1.5}
+                            unit="mm"
+                            diff={netChange(upcomingPrecipitation)}
+                            color={STAT_COLORS.precipitation}
+                            sparkline={upcomingPrecipitation}
+                            goodDirection="neutral"
+                        />
+                    ) : (
+                        <StatCard
+                            label="Cloud Cover"
+                            value={current?.cloud_cover != null ? Math.round(current.cloud_cover) : null}
+                            valueSize={1.5}
+                            unit="%"
+                            diff={netChange(nextFourHours(hourly?.cloud_cover))}
+                            color={STAT_COLORS.cloudCover}
+                            sparkline={nextFourHours(hourly?.cloud_cover)}
+                            goodDirection="neutral"
+                        />
+                    )}
                 </div>
 
                 <StatCardShell label="Calendar" className={styles.calendarShell}>

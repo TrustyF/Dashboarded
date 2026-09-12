@@ -12,7 +12,7 @@ const Sparkline = dynamic(() => import("@/components/charts/Sparkline"), { ssr: 
 type Props = {
   label: string;
   value: number | null;
-  unit: string;
+  unit?: string | null;
   diff: number | null;
   // Diff pill's unit, when it isn't measured in the same unit as the
   // headline value (e.g. headline is "% of goal" but diff is a raw count).
