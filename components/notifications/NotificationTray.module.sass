@@ -1,0 +1,85 @@
+@use "../../app/variables" as v
+
+// Covers the whole screen, above everything (Nav's pill peaks at z-index 50)
+// - a small screen made a corner card easy to miss entirely, so the
+// notification takes over the display instead of competing with whatever
+// view is underneath for attention.
+.overlay
+  position: fixed
+  inset: 0
+  z-index: 100
+  display: flex
+  flex-flow: column
+  align-items: center
+  justify-content: center
+  gap: 1em
+  padding: 2em
+  border: none
+  background-color: rgba(16, 16, 23, 0.96)
+  color: v.$text
+  font-family: inherit
+  text-align: center
+  cursor: pointer
+  animation: fadeIn 200ms ease-out
+
+// rem, not em - .overlay is a <button>, which doesn't reliably inherit the
+// document's font-size the way a <div> would (falls back to the browser's
+// own UA default instead), so em here was computing off the wrong base and
+// rendering much smaller than intended. rem always anchors to <html>'s own
+// font-size (see app/globals.sass's kiosk-scaled clamp()), sidestepping
+// that regardless of what the button does. Same class of issue Nav.module.sass's
+// .box button already had to work around via font-family: inherit.
+//
+// Absolutely positioned against .value (its nearest positioned ancestor) so
+// it sits directly above the headline figure without taking up space in
+// .overlay's flex flow - it doesn't push .message down or get counted in
+// the gap between .value and .message. bottom:100% anchors its bottom edge
+// to .value's top edge regardless of either element's size; left:50% +
+// translateX(-50%) centers it regardless of .value's (text-dependent) width.
+.icon
+  position: absolute
+  bottom: 50%
+  left: 50%
+  transform: translateX(-50%)
+  margin-bottom: 0.3em
+  font-size: 8rem
+  color: v.$accent
+
+// The headline figure (an appointment time, an mm amount, ...) - bigger and
+// accented compared to .message, since it's the specific fact someone
+// glancing over would actually want, with the message just giving it
+// context. Notifications without a value (there aren't any yet, but the
+// field is optional) just skip this and .message reads as the headline
+// on its own instead.
+.value
+  position: relative
+  font-size: 4rem
+  font-weight: 700
+  color: v.$accent
+
+.message
+  font-size: 2rem
+  font-weight: 500
+  max-width: 85vw
+
+// TEMP: styling for NotificationTray.tsx's manual test trigger - remove
+// alongside it once confirmed working on-device.
+.testButton
+  position: fixed
+  bottom: 10px
+  right: 10px
+  z-index: 101
+  padding: 0.4em 0.8em
+  border: 1px dashed v.$text-muted
+  border-radius: 8px
+  background-color: rgba(42, 59, 77, 0.6)
+  color: v.$text-muted
+  font-family: inherit
+  font-size: 0.75em
+  cursor: pointer
+
+@keyframes fadeIn
+  from
+    opacity: 0
+  to
+    opacity: 1

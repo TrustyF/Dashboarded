@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useTick } from "@/lib/hooks";
 import { EVENT_COLORS } from "@/lib/calendar-colors";
 import styles from "./CalendarTimeline.module.sass";
 
@@ -117,21 +118,6 @@ function EventRow({
       </div>
     </div>
   );
-}
-
-// One shared ticker for every row's countdown instead of each row running
-// its own setInterval - with a full calendar's worth of events that used to
-// mean dozens of independent timers each firing (and re-rendering) on their
-// own cadence, competing with the main thread right when the kiosk is mid
-// page-swipe. A single tick here recomputes every countdown as one state
-// update and one batched re-render instead of N.
-function useTick(intervalMs: number) {
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), intervalMs);
-    return () => clearInterval(id);
-  }, [intervalMs]);
-  return tick;
 }
 
 export default function CalendarTimeline({ events }: { events: CalendarEvent[] }) {

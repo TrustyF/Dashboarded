@@ -7,6 +7,23 @@ import { useActiveView } from "@/lib/active-view";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
+// Shared ticker for anything that needs to recheck a time-based condition on
+// its own cadence, independent of whatever SWR refresh interval the
+// underlying data uses - e.g. "is this event within an hour" can flip true
+// between calendar refetches (which poll far less often than that). One
+// timer per consumer, not a global singleton, since call sites want
+// different cadences (see components/calendar/CalendarTimeline.tsx's
+// once-a-minute countdown display vs. lib/notifications.ts's tighter
+// threshold checks).
+export function useTick(intervalMs: number) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return tick;
+}
+
 // Mirrors the refresh cadence of the old Pinia stores (weather_store.js polled
 // every 60s client-side against a 30 min server cache; calendar_store.js
 // polled every 60 min).

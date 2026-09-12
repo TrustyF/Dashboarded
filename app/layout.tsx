@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import Nav from "@/components/Nav";
+import NotificationTray from "@/components/notifications/NotificationTray";
 import { ActiveViewProvider } from "@/lib/active-view";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./globals.sass";
@@ -56,6 +57,7 @@ export default function RootLayout({
       <body>
         <ActiveViewProvider>
           <Nav />
+          <NotificationTray />
           <main>{children}</main>
         </ActiveViewProvider>
       </body>
