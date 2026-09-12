@@ -24,7 +24,7 @@ export type Notification = {
 // A glance-and-move-on cadence for a wall-mounted kiosk, not something
 // anyone's expected to dismiss by hand (though tapping one does dismiss it
 // early - see NotificationTray.tsx). Same idea as Nav.tsx's own auto-hide pill.
-const DEFAULT_DISPLAY_MS = 100_000;
+const DEFAULT_DISPLAY_MS = 20_000;
 
 // Independent of useCalendar's/useWeather's own network refresh intervals
 // (1h and 5min respectively - see lib/hooks.ts) - both rules below are
@@ -177,7 +177,6 @@ function useStepMilestones(push: (n: Notification) => void) {
 export function useNotificationCenter(): {
   active: Notification[];
   dismiss: (id: string) => void;
-  push: (n: Notification) => void;
 } {
   const [active, setActive] = useState<Notification[]>([]);
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -214,5 +213,5 @@ export function useNotificationCenter(): {
   useRainAlerts(push);
   useStepMilestones(push);
 
-  return { active, dismiss, push };
+  return { active, dismiss };
 }
