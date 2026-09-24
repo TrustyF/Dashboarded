@@ -11,6 +11,7 @@ import { cachedFetch } from "@/lib/api-cache";
 
 const TOKEN_PATH = process.env.GOOGLE_TOKEN_PATH ?? "/data/tokens/google_refresh_token.json";
 const REVALIDATE_SECONDS = 3600; // 1 hour
+const SHARED_CALENDAR_ID = "c54150518d194fe2a8723d16fc7e8c81e85cacc9e4149d73822ea5dc32230125@group.calendar.google.com";
 
 type CalendarEvent = {
   id: string;
@@ -19,6 +20,8 @@ type CalendarEvent = {
   summary: string;
   recurringEventId?: string;
   colorId?: string | number;
+  // Set by us (not Google) for events from non-primary calendars - see GET.
+  calendarColor?: string;
 };
 
 async function getAccessToken(): Promise<string> {
@@ -100,7 +103,24 @@ export async function GET(req: NextRequest) {
     )
   ).map((e) => ({ ...e, colorId: 7 }));
 
-  const events = [...primaryEvents, ...holidayEvents].sort((a, b) => {
+  // Tagged with the shared calendar's own color up front - the fallback in
+  // `formatted` below only knows the primary calendar's color.
+  const sharedColor = await getCalendarColor(SHARED_CALENDAR_ID, accessToken);
+  const sharedEvents = (
+    await getEvents(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(SHARED_CALENDAR_ID)}/events`,
+      {
+        maxResults: String(limit),
+        singleEvents: "true",
+        timeMin: nowIso,
+        timeMax: maxFutureIso,
+        orderBy: "startTime",
+      },
+      accessToken
+    )
+  ).map((e) => ({ ...e, calendarColor: sharedColor }));
+
+  const events = [...primaryEvents, ...holidayEvents, ...sharedEvents].sort((a, b) => {
     const da = a.start.dateTime ?? a.start.date ?? "";
     const db = b.start.dateTime ?? b.start.date ?? "";
     return da.localeCompare(db);
@@ -137,8 +157,9 @@ export async function GET(req: NextRequest) {
       colorId: e.colorId,
       // Holiday events already carry their own hardcoded colorId (see above)
       // and take priority over this on the frontend - only events without an
-      // override fall back to it.
-      calendarColor: primaryColor,
+      // override fall back to it. Shared events carry their own calendar's
+      // color; everything else falls back to the primary calendar's.
+      calendarColor: e.calendarColor ?? primaryColor,
     });
   }
 
